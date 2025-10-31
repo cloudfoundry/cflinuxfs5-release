@@ -53,12 +53,6 @@ jobs:
       - name: Checkout self
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
-        
       - name: Bump Golang Package
         id: golang-bump
         uses: ./.github/actions/bump-golang-package
@@ -143,12 +137,6 @@ jobs:
     steps:
       - name: Checkout self
         uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Build rootfs and process artifacts
         uses: ./.github/actions/build-and-process-rootfs

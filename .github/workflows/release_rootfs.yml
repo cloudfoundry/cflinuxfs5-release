@@ -93,12 +93,6 @@ jobs:
       - name: Checkout self
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
-
       - name: Release rootfs repository
         uses: ./.github/actions/release-rootfs-repo
         with:
@@ -119,12 +113,6 @@ jobs:
     steps:
       - name: Checkout self
         uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Bump to next minor rc
         id: bump
@@ -148,12 +136,6 @@ jobs:
       - name: Checkout self
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
-
       - name: Upload to GitHub release
         uses: ./.github/actions/upload-to-github
         with:
@@ -175,12 +157,6 @@ jobs:
       - name: Checkout self
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
-
       - name: Upload to Docker Hub
         uses: ./.github/actions/upload-to-docker
         with:
@@ -199,12 +175,6 @@ jobs:
     steps:
       - name: Checkout self
         uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Create and publish BOSH release
         uses: ./.github/actions/create-and-publish-bosh-release
