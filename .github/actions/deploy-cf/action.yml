@@ -95,19 +95,10 @@ runs:
         set -eo pipefail
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
         
-        # Debug: Show BBL version
-        echo "BBL version:"
-        bbl --version || echo "BBL version command failed"
-        echo "---"
-        
         # Convert PowerShell format ($env:VAR="value") to Bash format (export VAR="value")
         convert_ps_to_bash() {
           bbl print-env --state-dir "$1" | sed "s/^\\\$env:/export /g" | sed "s/'$/\"/g" | sed "s/='/=\"/g"
         }
-        
-        echo "BBL print-env output (converted to bash, first 20 lines):"
-        convert_ps_to_bash $BBL_STATE_DIR 2>&1 | head -20 || echo "BBL print-env failed"
-        echo "---"
         
         eval "$(convert_ps_to_bash $BBL_STATE_DIR)"
         bosh upload-stemcell https://bosh.io/d/stemcells/bosh-google-kvm-ubuntu-noble?v=1.25

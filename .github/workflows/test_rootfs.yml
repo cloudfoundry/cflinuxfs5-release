@@ -28,11 +28,11 @@ on:
       skip_cleanup:
         description: 'Skip infrastructure cleanup'
         type: boolean
-        default: false
+        default: true
       skip_setup:
         description: 'Skip setup test environment'
         type: boolean
-        default: false
+        default: true
       skip_deploy:
         description: 'Skip Deploy CF'
         type: boolean
