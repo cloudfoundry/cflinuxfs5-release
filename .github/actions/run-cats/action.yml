@@ -107,7 +107,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_go_buildpack_fs5 -f || true
-        cf create-buildpack cats_go_buildpack_fs5 "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPMb9xqMjZzIYWRiCJq976v5K8O0FDln4djspB" 1
+        cf create-buildpack cats_go_buildpack_fs5 "https://github.com/ivanovac/go-buildpack/releases/download/v1.11.00-beta-cflinuxfs5/buildpack.zip" 1
         cf update-buildpack cats_go_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload Node.js buildpack
