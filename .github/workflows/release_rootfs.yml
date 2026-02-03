@@ -136,7 +136,7 @@ jobs:
           final_version: ${{ needs.resolve-inputs.outputs.final_version }}
           bucket_name: ${{ vars.BUCKET_NAME }}
           default_branch: ${{ vars.DEFAULT_BRANCH }}
-          cflinuxfs_pat: ${{ secrets.CFLINUXFS5_PAT }}
+          cflinuxfs_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
 
   reset-version-to-rc:
     name: Reset to Next Minor RC
