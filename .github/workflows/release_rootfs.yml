@@ -130,13 +130,13 @@ jobs:
       - name: Release rootfs repository
         uses: ./.github/actions/release-rootfs-repo
         with:
-          rootfs_repo: ${{ vars.ROOTFS_REPO }}
+          rootfs_repo: ${{ needs.resolve-inputs.outputs.fips_mode == 'fips' && vars.ROOTFS_FIPS_REPO || vars.ROOTFS_REPO }}
           stack: ${{ needs.resolve-inputs.outputs.effective_stack }}
           rc_version: ${{ needs.resolve-inputs.outputs.rc_version }}
           final_version: ${{ needs.resolve-inputs.outputs.final_version }}
           bucket_name: ${{ vars.BUCKET_NAME }}
           default_branch: ${{ vars.DEFAULT_BRANCH }}
-          cflinuxfs_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
+          cflinuxfs_pat: ${{ secrets.CFLINUXFS5_PAT }}
 
   reset-version-to-rc:
     name: Reset to Next Minor RC
