@@ -106,40 +106,48 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        cf delete-buildpack cats_go_buildpack_fs5 -f || true
-        cf create-buildpack cats_go_buildpack_fs5 "https://github.com/ivanovac/go-buildpack/releases/download/v1.11.00-beta-cflinuxfs5/buildpack.zip" 1
-        cf update-buildpack cats_go_buildpack_fs5 --assign-stack cflinuxfs5
+        cf delete-buildpack go_buildpack -f || true
+        cf create-buildpack go_buildpack "https://github.com/ivanovac/go-buildpack/releases/download/v1.11.00-beta-cflinuxfs5/buildpack.zip" 1
+        cf update-buildpack go_buildpack --assign-stack cflinuxfs5
+
+    - name: Upload Ruby buildpack
+      shell: bash
+      run: |
+        set -euo pipefail
+        cf delete-buildpack ruby_buildpack -f || true
+        cf create-buildpack ruby_buildpack "https://github.com/ivanovac/ruby-buildpack/releases/download/v1.11.02-beta-cflinuxfs5/ruby_buildpack-cached-cflinuxfs5-v1.11.02-beta.zip" 2
+        cf update-buildpack ruby_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Node.js buildpack
       shell: bash
       run: |
         set -euo pipefail
-        cf delete-buildpack cats_nodejs_buildpack_fs5 -f || true
-        cf create-buildpack cats_nodejs_buildpack_fs5 "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPEsEtCHKh6AIfCm0e3PiDdbNpYMEzTuOkrgs7" 1
-        cf update-buildpack cats_nodejs_buildpack_fs5 --assign-stack cflinuxfs5
+        cf delete-buildpack nodejs_buildpack -f || true
+        cf create-buildpack nodejs_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPEsEtCHKh6AIfCm0e3PiDdbNpYMEzTuOkrgs7" 3
+        cf update-buildpack nodejs_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Python buildpack
       shell: bash
       run: |
         set -euo pipefail
-        cf delete-buildpack cats_python_buildpack_fs5 -f || true
-        cf create-buildpack cats_python_buildpack_fs5 "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPcEArVMD2FVhQzX9fjT81MWLlu2ygOeI65wbB" 1
-        cf update-buildpack cats_python_buildpack_fs5 --assign-stack cflinuxfs5
+        cf delete-buildpack python_buildpack -f || true
+        cf create-buildpack python_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPcEArVMD2FVhQzX9fjT81MWLlu2ygOeI65wbB" 4
+        cf update-buildpack python_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Staticfile (Nginx) buildpack
       shell: bash
       run: |
         set -euo pipefail
-        cf delete-buildpack cats_staticfile_buildpack_fs5 -f || true
-        cf create-buildpack cats_staticfile_buildpack_fs5 "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPWqx4jHLc0hYwfFZnEx9CoQWpjeHM1LruKXJN" 1
-        cf update-buildpack cats_staticfile_buildpack_fs5 --assign-stack cflinuxfs5
+        cf delete-buildpack staticfile_buildpack -f || true
+        cf create-buildpack staticfile_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPWqx4jHLc0hYwfFZnEx9CoQWpjeHM1LruKXJN" 5
+        cf update-buildpack staticfile_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Binary buildpack
       shell: bash
       run: |
         set -euo pipefail
         cf delete-buildpack binary_buildpack -f || true
-        cf create-buildpack binary_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kP361kcIMBSlE41WVDgbYQamtHMPncOA8KuCoJ" 1
+        cf create-buildpack binary_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kP361kcIMBSlE41WVDgbYQamtHMPncOA8KuCoJ" 6
         cf update-buildpack binary_buildpack --assign-stack cflinuxfs5
 
     - name: Create CATS config
@@ -176,15 +184,17 @@ runs:
           "skip_go": false,
           "skip_node": false,
           "skip_java": true,
-          "skip_ruby": true,
+          "skip_ruby": false,
           "skip_python": false,
           "skip_php": true,
           "skip_dotnet": true,
           "skip_staticfile": false,
-          "go_buildpack_name": "cats_go_buildpack_fs5",
-          "nginx_buildpack_name": "cats_staticfile_buildpack_fs5",
-          "nodejs_buildpack_name": "cats_nodejs_buildpack_fs5",
-          "python_buildpack_name": "cats_python_buildpack_fs5"
+          "go_buildpack_name": "go_buildpack",
+          "ruby_buildpack_name": "ruby_buildpack",
+          "nginx_buildpack_name": "staticfile_buildpack",
+          "nodejs_buildpack_name": "nodejs_buildpack",
+          "python_buildpack_name": "python_buildpack",
+          "binary_buildpack_name": "binary_buildpack"
         }
         EOF
         echo "config=$CONFIG_FILE" >> $GITHUB_OUTPUT
@@ -210,16 +220,14 @@ runs:
         echo "success=true" >> "$GITHUB_OUTPUT"
         exit 0
 
-    - name: Delete uploaded Go buildpack
+    - name: Cleanup buildpacks
       if: always()
       shell: bash
       run: |
         set -euo pipefail
-        cf delete-buildpack cats_go_buildpack_fs5 -f || true
-
-    - name: Delete uploaded Binary buildpack
-      if: always()
-      shell: bash
-      run: |
-        set -euo pipefail
+        cf delete-buildpack go_buildpack -f || true
+        cf delete-buildpack ruby_buildpack -f || true
+        cf delete-buildpack nodejs_buildpack -f || true
+        cf delete-buildpack python_buildpack -f || true
+        cf delete-buildpack staticfile_buildpack -f || true
         cf delete-buildpack binary_buildpack -f || true
