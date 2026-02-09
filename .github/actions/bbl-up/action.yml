@@ -119,6 +119,7 @@ runs:
         git config user.name "CF Buildpacks Eng Bot"
         git config user.email "tanzu-buildpacks.pdl@broadcom.com"
         
+        # Exclude sensitive files
         echo "*/gcp-key.json" >> .gitignore
         echo "*/service-account-key.json" >> .gitignore
         echo "*/*-key.json" >> .gitignore
@@ -126,6 +127,16 @@ runs:
         echo "*/*.pem" >> .gitignore
         echo "*/private_key" >> .gitignore
         echo "*/id_rsa*" >> .gitignore
+        
+        # Exclude large terraform provider binaries (exceed GitHub's 100MB limit)
+        echo "*/.terraform/providers/" >> .gitignore
+        echo "*/.terraform/plugins/" >> .gitignore
+        echo "**/.terraform/providers/" >> .gitignore
+        echo "**/.terraform/plugins/" >> .gitignore
+        
+        # Remove any already-staged terraform providers
+        git rm -rf --cached "*/.terraform/providers" 2>/dev/null || true
+        git rm -rf --cached "**/.terraform/providers" 2>/dev/null || true
         
         if [[ -n "$(git status --porcelain)" ]]; then
           git add -A
