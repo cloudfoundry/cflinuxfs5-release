@@ -115,7 +115,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack ruby_buildpack -f || true
-        cf create-buildpack ruby_buildpack "https://github.com/ivanovac/ruby-buildpack/releases/download/v1.11.04-beta-cflinuxfs5/ruby_buildpack-cached-cflinuxfs5-v1.11.04-beta.zip" 2
+        cf create-buildpack ruby_buildpack "https://github.com/ivanovac/ruby-buildpack/releases/download/v1.11.05-beta-cflinuxfs5/ruby_buildpack-cached-cflinuxfs5-v1.11.05-beta.zip" 2
         cf update-buildpack ruby_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Node.js buildpack
