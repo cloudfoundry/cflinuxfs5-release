@@ -26,6 +26,14 @@ inputs:
     description: 'GCP Region'
     required: false
     default: 'us-central1'
+  gcp_dns_zone_name:
+    description: 'GCP DNS parent zone name for NS delegation cleanup'
+    required: false
+    default: ''
+  gcp_dns_record_set_name:
+    description: 'DNS record set name to remove'
+    required: false
+    default: ''
 
 outputs:
   success:
@@ -59,6 +67,18 @@ runs:
         wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
         unzip /tmp/terraform.zip -d /tmp/
         sudo mv /tmp/terraform /usr/local/bin/terraform
+
+    - name: Manage GCP DNS (Remove NS delegation)
+      if: inputs.gcp_dns_zone_name != '' && inputs.gcp_dns_record_set_name != ''
+      uses: ./.github/actions/manage-gcp-dns
+      with:
+        action: remove
+        bbl_state_dir: bbl-state/${{ inputs.env_name }}
+        gcp_dns_service_account_key: ${{ env.GCP_SERVICE_ACCOUNT_KEY }}
+        gcp_dns_zone_name: ${{ inputs.gcp_dns_zone_name }}
+        gcp_dns_record_set_name: ${{ inputs.gcp_dns_record_set_name }}
+        gcp_dns_record_ttl: '300'
+        check_dns: 'false'
 
     - name: Destroy environment
       id: destroy
