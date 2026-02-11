@@ -139,7 +139,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack staticfile_buildpack -f || true
-        cf create-buildpack staticfile_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPWqx4jHLc0hYwfFZnEx9CoQWpjeHM1LruKXJN" 5
+        cf create-buildpack staticfile_buildpack "https://github.com/ivanovac/staticfile-buildpack/releases/download/v1.6.34-cflinuxfs5/staticfile_buildpack-cached-cflinuxfs5-v1.6.34.zip" 5
         cf update-buildpack staticfile_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Binary buildpack
@@ -171,6 +171,7 @@ runs:
           "admin_user": "admin",
           "admin_password": "${{ steps.creds.outputs.admin_password }}",
           "skip_ssl_validation": true,
+          "stacks": ["cflinuxfs5"],
           "use_existing_organization": false,
           "use_existing_space": false,
           "include_apps": true,
