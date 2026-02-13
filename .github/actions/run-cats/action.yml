@@ -131,7 +131,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack python_buildpack -f || true
-        cf create-buildpack python_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kPcEArVMD2FVhQzX9fjT81MWLlu2ygOeI65wbB" 4
+        cf create-buildpack python_buildpack "https://github.com/ivanovac/python-buildpack/releases/download/v1.9.0-beta-cflinuxfs5/buildpack.zip" 4
         cf update-buildpack python_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Staticfile (Nginx) buildpack
