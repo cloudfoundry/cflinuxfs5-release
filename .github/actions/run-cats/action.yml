@@ -123,7 +123,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack nodejs_buildpack -f || true
-        cf create-buildpack nodejs_buildpack "https://github.com/ivanovac/nodejs-buildpack/releases/download/v1.9.1-beta/buildpack.zip" 3
+        cf create-buildpack nodejs_buildpack "https://github.com/ivo1116/nodejs-buildpack/releases/download/v1.9.2-cflinuxfs5/buildpack.zip" 3
         cf update-buildpack nodejs_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Python buildpack
@@ -139,7 +139,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack staticfile_buildpack -f || true
-        cf create-buildpack staticfile_buildpack "https://github.com/ivanovac/nginx-buildpack/releases/download/v1.3.0-beta/nginx_buildpack-v1.3.0-beta.zip" 5
+        cf create-buildpack staticfile_buildpack "https://github.com/ivo1116/staticfile-buildpack/releases/download/v1.7.1-cflinuxfs5/buildpack.zip" 5
         cf update-buildpack staticfile_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Binary buildpack
