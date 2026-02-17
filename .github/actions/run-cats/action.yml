@@ -139,7 +139,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack staticfile_buildpack -f || true
-        cf create-buildpack staticfile_buildpack "https://github.com/ivanovac/staticfile-buildpack/releases/download/v1.7.0-beta/buildpack.zip" 5
+        cf create-buildpack staticfile_buildpack "https://github.com/ivo1116/staticfile-buildpack/releases/download/v1.7.1-cflinuxfs5/buildpack.zip" 5
         cf update-buildpack staticfile_buildpack --assign-stack cflinuxfs5
 
     - name: Upload Binary buildpack
