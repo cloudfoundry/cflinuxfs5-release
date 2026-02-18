@@ -163,7 +163,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack dotnet_core_buildpack -f || true
-        cf create-buildpack dotnet_core_buildpack "https://github.com/ivanovac/dotnet-core-buildpack/releases/download/v2.5.1-beta-cflinuxfs5/buildpack.zip" 8
+        cf create-buildpack dotnet_core_buildpack "https://github.com/ivo1116/dotnet-core-buildpack/releases/download/v2.5.2-cflinuxfs5/buildpack.zip" 8
         cf update-buildpack dotnet_core_buildpack --assign-stack cflinuxfs5
 
     - name: Create CATS config
@@ -211,7 +211,9 @@ runs:
           "nginx_buildpack_name": "nginx_buildpack",
           "nodejs_buildpack_name": "nodejs_buildpack",
           "python_buildpack_name": "python_buildpack",
-          "binary_buildpack_name": "binary_buildpack"
+          "binary_buildpack_name": "binary_buildpack",
+          "dotnet_core_buildpack_name": "dotnet_core_buildpack",
+          "staticfile_buildpack_name": "staticfile_buildpack"
         }
         EOF
         echo "config=$CONFIG_FILE" >> $GITHUB_OUTPUT
@@ -247,5 +249,6 @@ runs:
         cf delete-buildpack nodejs_buildpack -f || true
         cf delete-buildpack python_buildpack -f || true
         cf delete-buildpack staticfile_buildpack -f || true
+        cf delete-buildpack nginx_buildpack -f || true
         cf delete-buildpack binary_buildpack -f || true
         cf delete-buildpack dotnet_core_buildpack -f || true
