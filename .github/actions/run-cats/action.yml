@@ -166,6 +166,30 @@ runs:
         cf create-buildpack dotnet_core_buildpack "https://github.com/ivo1116/dotnet-core-buildpack/releases/download/v2.5.2-cflinuxfs5/buildpack.zip" 8
         cf update-buildpack dotnet_core_buildpack --assign-stack cflinuxfs5
 
+    - name: Upload Java buildpack
+      shell: bash
+      run: |
+        set -euo pipefail
+        cf delete-buildpack java_buildpack -f || true
+        cf create-buildpack java_buildpack "https://github.com/ivo1116/java-buildpack/releases/download/v4.75.0-cflinuxfs5/java-buildpack-f5848d11.zip" 9
+        cf update-buildpack java_buildpack --assign-stack cflinuxfs5
+
+    - name: Upload PHP buildpack
+      shell: bash
+      run: |
+        set -euo pipefail
+        cf delete-buildpack php_buildpack -f || true
+        cf create-buildpack php_buildpack "https://github.com/ivo1116/php-buildpack/releases/download/v4.7.0-cflinuxfs5/buildpack.zip" 10
+        cf update-buildpack php_buildpack --assign-stack cflinuxfs5
+
+    - name: Upload R buildpack
+      shell: bash
+      run: |
+        set -euo pipefail
+        cf delete-buildpack r_buildpack -f || true
+        cf create-buildpack r_buildpack "https://github.com/ivo1116/r-buildpack/releases/download/v1.2.15-cflinuxfs5/buildpack.zip" 11
+        cf update-buildpack r_buildpack --assign-stack cflinuxfs5
+
     - name: Create CATS config
       id: config
       shell: bash
@@ -183,7 +207,7 @@ runs:
           "use_existing_organization": false,
           "use_existing_space": false,
           "include_apps": true,
-          "include_detect": true,
+          "include_detect": false,
           "include_routing": true,
           "include_v3": true,
           "include_tasks": true,
@@ -200,10 +224,10 @@ runs:
           "skip_diego_unsupported_tests": true,
           "skip_go": false,
           "skip_node": false,
-          "skip_java": true,
+          "skip_java": false,
           "skip_ruby": false,
           "skip_python": false,
-          "skip_php": true,
+          "skip_php": false,
           "skip_dotnet": false,
           "skip_staticfile": false,
           "go_buildpack_name": "go_buildpack",
@@ -213,7 +237,10 @@ runs:
           "python_buildpack_name": "python_buildpack",
           "binary_buildpack_name": "binary_buildpack",
           "dotnet_core_buildpack_name": "dotnet_core_buildpack",
-          "staticfile_buildpack_name": "staticfile_buildpack"
+          "staticfile_buildpack_name": "staticfile_buildpack",
+          "java_buildpack_name": "java_buildpack",
+          "php_buildpack_name": "php_buildpack",
+          "r_buildpack_name": "r_buildpack"
         }
         EOF
         echo "config=$CONFIG_FILE" >> $GITHUB_OUTPUT
@@ -252,3 +279,6 @@ runs:
         cf delete-buildpack nginx_buildpack -f || true
         cf delete-buildpack binary_buildpack -f || true
         cf delete-buildpack dotnet_core_buildpack -f || true
+        cf delete-buildpack java_buildpack -f || true
+        cf delete-buildpack php_buildpack -f || true
+        cf delete-buildpack r_buildpack -f || true
