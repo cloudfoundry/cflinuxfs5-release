@@ -25,7 +25,7 @@ inputs:
   flake_attempts:
     description: 'Retries for flaky tests'
     required: false
-    default: '2'
+    default: '3'
   timeout:
     description: 'Test timeout (e.g. 2h)'
     required: false
@@ -203,6 +203,7 @@ runs:
           "admin_user": "admin",
           "admin_password": "${{ steps.creds.outputs.admin_password }}",
           "skip_ssl_validation": true,
+          "timeout_scale": 2,
           "stacks": ["cflinuxfs5"],
           "use_existing_organization": false,
           "use_existing_space": false,
