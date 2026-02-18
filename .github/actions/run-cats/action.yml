@@ -142,12 +142,20 @@ runs:
         cf create-buildpack staticfile_buildpack "https://github.com/ivo1116/staticfile-buildpack/releases/download/v1.7.1-cflinuxfs5/buildpack.zip" 5
         cf update-buildpack staticfile_buildpack --assign-stack cflinuxfs5
 
+    - name: Upload Nginx buildpack
+      shell: bash
+      run: |
+        set -euo pipefail
+        cf delete-buildpack nginx_buildpack -f || true
+        cf create-buildpack nginx_buildpack "https://github.com/ivanovac/nginx-buildpack/releases/download/v1.3.0-beta/nginx_buildpack-v1.3.0-beta.zip" 6
+        cf update-buildpack nginx_buildpack --assign-stack cflinuxfs5
+
     - name: Upload Binary buildpack
       shell: bash
       run: |
         set -euo pipefail
         cf delete-buildpack binary_buildpack -f || true
-        cf create-buildpack binary_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kP361kcIMBSlE41WVDgbYQamtHMPncOA8KuCoJ" 6
+        cf create-buildpack binary_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kP361kcIMBSlE41WVDgbYQamtHMPncOA8KuCoJ" 7
         cf update-buildpack binary_buildpack --assign-stack cflinuxfs5
 
     - name: Upload DotNet Core buildpack
@@ -155,7 +163,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack dotnet_core_buildpack -f || true
-        cf create-buildpack dotnet_core_buildpack "https://github.com/ivanovac/dotnet-core-buildpack/releases/download/v2.5.1-beta-cflinuxfs5/buildpack.zip" 7
+        cf create-buildpack dotnet_core_buildpack "https://github.com/ivanovac/dotnet-core-buildpack/releases/download/v2.5.1-beta-cflinuxfs5/buildpack.zip" 8
         cf update-buildpack dotnet_core_buildpack --assign-stack cflinuxfs5
 
     - name: Create CATS config
@@ -200,7 +208,7 @@ runs:
           "skip_staticfile": false,
           "go_buildpack_name": "go_buildpack",
           "ruby_buildpack_name": "ruby_buildpack",
-          "nginx_buildpack_name": "staticfile_buildpack",
+          "nginx_buildpack_name": "nginx_buildpack",
           "nodejs_buildpack_name": "nodejs_buildpack",
           "python_buildpack_name": "python_buildpack",
           "binary_buildpack_name": "binary_buildpack"
