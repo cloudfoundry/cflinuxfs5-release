@@ -39,6 +39,11 @@ inputs:
     description: 'SSH deploy key for release repo'
     required: true
 
+outputs:
+  success:
+    description: 'Indicates if the action ran without issues'
+    value: ${{ steps.set_success.outputs.success }}
+
 runs:
   using: 'composite'
   steps:
@@ -71,7 +76,6 @@ runs:
         [default]
         aws_access_key_id = $AWS_ACCESS_KEY_ID
         aws_secret_access_key = $AWS_SECRET_ACCESS_KEY
-        aws_session_token = $AWS_SESSION_TOKEN
         EOF
 
     - name: Create final BOSH release
@@ -85,7 +89,6 @@ runs:
         release_repo: ${{ inputs.owner }}/${{ inputs.release_repo }}
         go_version: ${{ inputs.go_version }}
         aws_region: ${{ inputs.aws_region }}
-        github_token: ${{ inputs.github_token }}
         final: true
 
     - name: Upload BOSH release to S3
@@ -121,3 +124,9 @@ runs:
         version: ${{ inputs.version }}
         owner: ${{ inputs.owner }}
         repo: ${{ inputs.release_repo }}
+
+    - name: Set success output
+      id: set_success
+      if: success()
+      shell: bash
+      run: echo "success=true" >> $GITHUB_OUTPUT

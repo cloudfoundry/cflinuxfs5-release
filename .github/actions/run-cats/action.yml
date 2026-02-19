@@ -59,7 +59,7 @@ runs:
       run: |
         set -euo pipefail
 
-        wget -O /tmp/bbl https://github.com/Ivo1116/bosh-bootloader/releases/download/test/bbl-linux
+        wget -O /tmp/bbl https://github.com/cloudfoundry/bosh-bootloader/releases/download/v9.0.36/bbl-v9.0.36_linux_amd64
         chmod +x /tmp/bbl && sudo mv /tmp/bbl /usr/local/bin/bbl
 
         wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
@@ -79,12 +79,7 @@ runs:
         set -euo pipefail
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
 
-        # Convert PowerShell format to Bash format
-        convert_ps_to_bash() {
-          bbl print-env --state-dir "$1" | sed "s/^\\\$env:/export /g" | sed "s/'$/\"/g" | sed "s/='/=\"/g"
-        }
-        
-        eval "$(convert_ps_to_bash "$BBL_STATE_DIR")"
+        eval "$(bbl print-env --state-dir "$BBL_STATE_DIR")"
 
         DIRECTOR_NAME=$(jq -r .bosh.directorName "$BBL_STATE_DIR/bbl-state.json")
 
@@ -134,7 +129,7 @@ runs:
         cf create-buildpack python_buildpack "https://github.com/ivanovac/python-buildpack/releases/download/v1.9.1-beta/buildpack.zip" 4
         cf update-buildpack python_buildpack --assign-stack cflinuxfs5
 
-    - name: Upload Staticfile (Nginx) buildpack
+    - name: Upload Staticfile buildpack
       shell: bash
       run: |
         set -euo pipefail

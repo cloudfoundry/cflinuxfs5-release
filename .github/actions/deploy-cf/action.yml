@@ -17,13 +17,13 @@ inputs:
   bbl_state_branch:
     description: 'Branch of the bbl state repo'
     required: false
-    default: main
+    default: master
   bbl_state_deploy_key:
     description: 'SSH deploy key for BBL state repo'
     required: true
   ops_file_repo:
     description: 'Git repo conataining the ops file'
-    required: true
+    required: false
   ops_file:
     description: 'use cflinuxfs ops file'
     default: "ops-file/use-{your-cflinuxfs-version}.yml"
@@ -61,19 +61,12 @@ runs:
         ref: main
         path: cf-deployment
 
-    - name: Checkout test ops file repo
-      uses: actions/checkout@v4
-      with:
-        repository: ${{ inputs.ops_file_repo }}
-        ref: main
-        path: ops-file
-
     - name: Setup tools (bosh, bbl)
       shell: bash
       run: |
         set -euo pipefail
         
-        wget -O /tmp/bbl https://github.com/Ivo1116/bosh-bootloader/releases/download/test/bbl-linux
+        wget -O /tmp/bbl https://github.com/cloudfoundry/bosh-bootloader/releases/download/v9.0.36/bbl-v9.0.36_linux_amd64
         chmod +x /tmp/bbl
         sudo mv /tmp/bbl /usr/local/bin/bbl
 
@@ -92,48 +85,30 @@ runs:
     - name: Upload Noble stemcell
       shell: bash
       run: |
-        set -eo pipefail
+        set -euo pipefail
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
-        
-        # Convert PowerShell format ($env:VAR="value") to Bash format (export VAR="value")
-        convert_ps_to_bash() {
-          bbl print-env --state-dir "$1" | sed "s/^\\\$env:/export /g" | sed "s/'$/\"/g" | sed "s/='/=\"/g"
-        }
-        
-        eval "$(convert_ps_to_bash $BBL_STATE_DIR)"
+        eval "$(bbl print-env --state-dir $BBL_STATE_DIR)"
         bosh upload-stemcell https://bosh.io/d/stemcells/bosh-google-kvm-ubuntu-noble?v=1.25
 
     - name: Upload cflinux release
       shell: bash
       run: |
-        set -eo pipefail
+        set -euo pipefail
         STACK="${{ inputs.stack }}"
         VERSION="${{ inputs.version }}"
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
-        
-        # Convert PowerShell format to Bash format
-        convert_ps_to_bash() {
-          bbl print-env --state-dir "$1" | sed "s/^\\\$env:/export /g" | sed "s/'$/\"/g" | sed "s/='/=\"/g"
-        }
-        
-        eval "$(convert_ps_to_bash $BBL_STATE_DIR)"
+        eval "$(bbl print-env --state-dir $BBL_STATE_DIR)"
         bosh upload-release rootfs-artifacts/${STACK}-release-${VERSION}.tgz
 
     - name: Deploy CF with the new rootfs
       id: deploy
       shell: bash
       run: |
-        set -eo pipefail
+        set -euo pipefail
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
         DOMAIN="${{ inputs.system_domain }}"
-        OPS_FILE="ops-file/${{ inputs.ops_file }}"
-        
-        # Convert PowerShell format to Bash format
-        convert_ps_to_bash() {
-          bbl print-env --state-dir "$1" | sed "s/^\\\$env:/export /g" | sed "s/'$/\"/g" | sed "s/='/=\"/g"
-        }
-        
-        eval "$(convert_ps_to_bash $BBL_STATE_DIR)"
+        OPS_FILE=".github/ops/${{ inputs.ops_file }}"
+        eval "$(bbl print-env --state-dir $BBL_STATE_DIR)"
         
         deploy_cf() {
           bosh -n -d cf deploy cf-deployment/cf-deployment.yml \

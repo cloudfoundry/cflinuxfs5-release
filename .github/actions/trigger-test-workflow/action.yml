@@ -8,14 +8,6 @@ inputs:
   version:
     description: 'Version to test'
     required: true
-  fips_mode:
-    description: 'FIPS mode (normal or fips)'
-    required: false
-    default: 'normal'
-  fips_method:
-    description: 'FIPS build method (source or ubuntu-pro)'
-    required: false
-    default: 'source'
 
 runs:
   using: 'composite'
@@ -31,7 +23,5 @@ runs:
             "skip_cleanup": "false",
             "skip_setup": "false",
             "skip_deploy": "false",
-            "skip_cats": "false",
-            "fips_mode": "${{ inputs.fips_mode }}",
-            "fips_method": "${{ inputs.fips_method }}"
+            "skip_cats": "false"
           }

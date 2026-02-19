@@ -9,22 +9,6 @@ on:
         description: RC version to release (e.g. 1.2.0-rc.4)
         required: true
         default: 1.0.0-rc.1
-      fips_mode:
-        description: 'FIPS mode'
-        type: choice
-        required: false
-        default: 'normal'
-        options:
-          - normal
-          - fips
-      fips_method:
-        description: 'FIPS build method'
-        type: choice
-        required: false
-        default: 'source'
-        options:
-          - source
-          - ubuntu-pro
       skip_github_release:
         description: Skip GitHub release
         type: boolean
@@ -44,7 +28,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: cflinuxfs5-release
+  group:  cflinusfs
   cancel-in-progress: false
 
 defaults:
@@ -60,9 +44,6 @@ jobs:
       final_version: ${{ steps.final.outputs.final_version }}
       previous_tag: ${{ steps.previous.outputs.previous_tag }}
       proceed: ${{ steps.guard.outputs.proceed }}
-      fips_mode: ${{ steps.set-vars.outputs.fips_mode }}
-      fips_method: ${{ steps.set-vars.outputs.fips_method }}
-      effective_stack: ${{ steps.effective-stack.outputs.effective_stack }}
       skip_github_release: ${{ steps.set-vars.outputs.skip_github_release }}
       skip_docker_release: ${{ steps.set-vars.outputs.skip_docker_release }}
       skip_bosh_release: ${{ steps.set-vars.outputs.skip_bosh_release }}
@@ -76,24 +57,9 @@ jobs:
         with:
           repository_dispatch_version: ${{ github.event.client_payload.version }}
           workflow_dispatch_version: ${{ github.event.inputs.version }}
-          fips_mode: ${{ github.event.client_payload.fips_mode || github.event.inputs.fips_mode || 'normal' }}
-          fips_method: ${{ github.event.client_payload.fips_method || github.event.inputs.fips_method || 'source' }}
           skip_github_release: ${{ github.event.client_payload.skip_github_release || github.event.inputs.skip_github_release || 'false' }}
           skip_docker_release: ${{ github.event.client_payload.skip_docker_release || github.event.inputs.skip_docker_release || 'false' }}
           skip_bosh_release: ${{ github.event.client_payload.skip_bosh_release || github.event.inputs.skip_bosh_release || 'false' }}
-
-      - name: Compute effective stack name
-        id: effective-stack
-        shell: bash
-        run: |
-          set -euo pipefail
-          STACK="${{ vars.STACK }}"
-          FIPS_MODE="${{ steps.set-vars.outputs.fips_mode }}"
-          if [[ "$FIPS_MODE" == "fips" ]]; then
-            echo "effective_stack=${STACK}-fips" >> $GITHUB_OUTPUT
-          else
-            echo "effective_stack=${STACK}" >> $GITHUB_OUTPUT
-          fi
 
       - name: Preflight guard
         id: guard
@@ -112,7 +78,7 @@ jobs:
         id: previous
         uses: ./.github/actions/get-previous-release-tag
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
           owner: ${{ github.repository_owner }}
           repo: ${{ vars.STACK }}
 
@@ -130,36 +96,70 @@ jobs:
       - name: Release rootfs repository
         uses: ./.github/actions/release-rootfs-repo
         with:
-          rootfs_repo: ${{ needs.resolve-inputs.outputs.fips_mode == 'fips' && vars.ROOTFS_FIPS_REPO || vars.ROOTFS_REPO }}
-          stack: ${{ needs.resolve-inputs.outputs.effective_stack }}
+          rootfs_repo: ${{ vars.ROOTFS_REPO }}
+          stack: ${{ vars.STACK }}
           rc_version: ${{ needs.resolve-inputs.outputs.rc_version }}
           final_version: ${{ needs.resolve-inputs.outputs.final_version }}
           bucket_name: ${{ vars.BUCKET_NAME }}
-          default_branch: ${{ vars.DEFAULT_BRANCH }}
+          default_branch: main
           cflinuxfs_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
   reset-version-to-rc:
-    name: Reset to Next Minor RC
+    name: Reset to Next Minor RC/Beta
     runs-on: ubuntu-latest
-    needs: [release-rootfs-repo]
+    needs: [release-rootfs-repo, resolve-inputs]
     outputs:
       next_rc: ${{ steps.bump.outputs.next_rc }}
     steps:
       - name: Checkout self
         uses: actions/checkout@v4
 
-      - name: Bump to next minor rc
+      - name: Get current version from S3 to determine mode
+        id: current-version
+        uses: ./.github/actions/get-version-from-s3
+        with:
+          bucket_name: ${{ vars.BUCKET_NAME }}
+          key: versions/stack-${{ vars.STACK }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+
+      - name: Determine mode from current version
+        id: mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          CURRENT_VERSION="${{ steps.current-version.outputs.version }}"
+          if [[ "$CURRENT_VERSION" =~ -beta ]]; then
+            MODE="beta"
+          else
+            MODE="rc"
+          fi
+          echo "mode=$MODE" >> $GITHUB_OUTPUT
+          echo "Determined mode: $MODE from version: $CURRENT_VERSION"
+
+      - name: Bump to next minor rc/beta
         id: bump
         uses: ./.github/actions/bump-next-minor-rc
         with:
           final_version: ${{ needs.release-rootfs-repo.outputs.final_version }}
+          mode: ${{ steps.mode.outputs.mode }}
 
-      - name: Persist next RC to S3
+      - name: Persist next RC/Beta to S3
         uses: ./.github/actions/update-version-s3
         with:
           bucket_name: ${{ vars.BUCKET_NAME }}
           key: versions/stack-${{ vars.STACK }}
           version: ${{ steps.bump.outputs.next_rc }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
   upload-to-github:
     name: Upload to GitHub
@@ -173,14 +173,18 @@ jobs:
       - name: Upload to GitHub release
         uses: ./.github/actions/upload-to-github
         with:
-          stack: ${{ needs.resolve-inputs.outputs.effective_stack }}
+          stack: ${{ vars.STACK }}
           version: ${{ needs.release-rootfs-repo.outputs.final_version }}
           previous_version: ${{ needs.resolve-inputs.outputs.previous_tag }}
           bucket_name: ${{ vars.BUCKET_NAME }}
-          github_token: ${{ secrets.CFLINUXFS5_PAT }}
+          github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
           owner: ${{ github.repository_owner }}
           repo: ${{ vars.STACK }}
           include_receipt: 'true'
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
   upload-to-docker:
     name: Upload to Docker Hub
@@ -194,13 +198,16 @@ jobs:
       - name: Upload to Docker Hub
         uses: ./.github/actions/upload-to-docker
         with:
-          stack: ${{ needs.resolve-inputs.outputs.effective_stack }}
+          stack: ${{ vars.STACK }}
           version: ${{ needs.release-rootfs-repo.outputs.final_version }}
           bucket_name: ${{ vars.BUCKET_NAME }}
-          docker_image: ${{ vars.DOCKER_IMAGE }}
+          docker_image: ${{ vars.STACK }}
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
-          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-          fips_mode: ${{ needs.resolve-inputs.outputs.fips_mode }}
+          dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
   create-bosh-release:
     name: Create and Publish BOSH Release
@@ -214,26 +221,35 @@ jobs:
       - name: Create and publish BOSH release
         uses: ./.github/actions/create-and-publish-bosh-release
         with:
-          stack: ${{ needs.resolve-inputs.outputs.effective_stack }}
+          stack: ${{ vars.STACK }}
           version: ${{ needs.release-rootfs-repo.outputs.final_version }}
           release_repo: ${{ vars.STACK }}-release
           bucket_name: ${{ vars.BUCKET_NAME }}
-          default_branch: ${{ vars.DEFAULT_BRANCH }}
-          git_user_name: ${{ vars.STACK }}-bot
-          git_user_email: ${{ vars.STACK }}-bot@test.com
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_branch: dev
+          git_user_name: app-runtime-interfaces@cloudfoundry.org
+          git_user_email: app-runtime-interfaces@cloudfoundry.org
+          github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
           go_version: ${{ vars.GOLANG_VERSION }}
-          aws_region: ${{ vars.AWS_REGION }}
+          aws_region: ${{ secrets.AWS_REGION }}
           owner: ${{ vars.REPO_OWNER }}
-          release_deploy_key: ${{ secrets.CFLINUXFS5_RELEASE_DEPLOY_KEY }}
+          release_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
       - name: Delete RC BOSH release artifact
+        if: ${{ steps.create_and_publish.outputs.success == 'true' }}
         uses: ./.github/actions/delete-rc-artifacts
         with:
-          stack: ${{ needs.resolve-inputs.outputs.effective_stack }}
+          stack: ${{ vars.STACK }}
           rc_version: ${{ needs.resolve-inputs.outputs.rc_version }}
           bucket_name: ${{ vars.BUCKET_NAME }}
           artifact_types: 'stack, receipt, release'
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
   summary:
     name: Release Summary

@@ -11,7 +11,7 @@ inputs:
   bbl_state_branch:
     description: 'Branch of the bbl state repo'
     required: true
-    default: main
+    default: master
   bbl_state_deploy_key:
     description: 'SSH deploy key for BBL state repo'
     required: true
@@ -32,7 +32,7 @@ runs:
       run: |
         set -euo pipefail
         
-        wget -O /tmp/bbl https://github.com/Ivo1116/bosh-bootloader/releases/download/test/bbl-linux
+        wget -O /tmp/bbl https://github.com/cloudfoundry/bosh-bootloader/releases/download/v9.0.36/bbl-v9.0.36_linux_amd64
         chmod +x /tmp/bbl
         sudo mv /tmp/bbl /usr/local/bin/bbl
 
@@ -51,10 +51,5 @@ runs:
           exit 1
         fi
 
-        # Convert PowerShell format to Bash format
-        convert_ps_to_bash() {
-          bbl print-env --state-dir "$1" | sed "s/^\\\$env:/export /g" | sed "s/'$/\"/g" | sed "s/='/=\"/g"
-        }
-        
-        eval "$(convert_ps_to_bash "$BBL_STATE_DIR")"
+        eval "$(bbl print-env --state-dir "$BBL_STATE_DIR")"
         bosh delete-deployment -d cf --non-interactive || echo "CF deployment deletion completed or not found"

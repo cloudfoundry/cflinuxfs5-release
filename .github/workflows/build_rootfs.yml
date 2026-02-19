@@ -7,22 +7,6 @@ on:
         description: 'Reason for triggering build'
         required: false
         default: 'Manual trigger'
-      fips_mode:
-        description: 'Build FIPS-compliant rootfs'
-        type: choice
-        required: false
-        default: 'normal'
-        options:
-          - normal
-          - fips
-      fips_method:
-        description: 'FIPS build method (only used when fips_mode is fips)'
-        type: choice
-        required: false
-        default: 'source'
-        options:
-          - source
-          - ubuntu-pro
   schedule:
     - cron: '32 14 * * *'
   repository_dispatch:
@@ -65,9 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       golang_updated: ${{ steps.golang-bump.outputs.changes_detected }}
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Checkout self
         uses: actions/checkout@v4
@@ -88,10 +69,14 @@ jobs:
                 region: ${{ vars.AWS_REGION }}
                 credentials_source: env_or_profile
           cflinuxfs_release_repo: ${{ vars.RELEASE_REPO }}
-          cflinuxfs_release_ref: ${{ vars.DEFAULT_BRANCH }}
+          cflinuxfs_release_ref: main
           golang_release_repo: ${{ vars.GOLANG_RELEASE_REPO }}
-          golang_release_ref: ${{ vars.DEFAULT_BRANCH }}
-          release_deploy_key: ${{ secrets.CFLINUXFS5_RELEASE_DEPLOY_KEY }}
+          golang_release_ref: main
+          release_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
   determine-build-needed:
     name: Determine if Build is Needed
@@ -120,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.determine-build-needed.outputs.should_build == 'true'
     outputs:
-      previous-version: ${{ steps.previous-release.outputs.tag }}
+      previous-version: ${{ steps.previous-version.outputs.version }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout self
@@ -133,19 +118,22 @@ jobs:
           cves_detected: ${{ needs.check-new-cves.outputs.cves_detected }}
           golang_updated: ${{ needs.bump-golang-package.outputs.golang_updated }}
 
-      - name: Get previous rootfs release
-        id: previous-release
-        uses: ./.github/actions/get-previous-release-tag
+      - name: Get previous version from S3
+        id: previous-version
+        uses: ./.github/actions/get-version-from-s3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          owner: ${{ github.repository_owner }}
-          repo: ${{ vars.STACK }}
+          bucket_name: ${{ vars.BUCKET_NAME }}
+          key: versions/stack-${{ vars.STACK }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
       - name: Generate version
         id: version
         uses: ./.github/actions/generate-version
         with:
-          previous_tag: ${{ steps.previous-release.outputs.tag }}
+          previous_tag: ${{ steps.previous-version.outputs.version }}
           version_format: ${{ vars.VERSION_FORMAT }}
 
   build-and-process:
@@ -153,9 +141,6 @@ jobs:
     needs: [determine-build-needed, gather-resources]
     runs-on: ubuntu-latest
     if: needs.determine-build-needed.outputs.should_build == 'true'
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Checkout self
         uses: actions/checkout@v4
@@ -169,22 +154,33 @@ jobs:
           bucket_name: ${{ vars.BUCKET_NAME }}
           release_repo: ${{ vars.RELEASE_REPO }}
           cflinuxfs_repo: ${{ vars.ROOTFS_REPO }}
-          cflinuxfs_fips_repo: ${{ vars.ROOTFS_FIPS_REPO }}
           go_version: ${{ vars.GOLANG_VERSION }}
-          aws_region: ${{ vars.AWS_REGION }}
+          aws_region: ${{ secrets.AWS_REGION }}
           cflinuxfs_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
-          release_deploy_key: ${{ secrets.CFLINUXFS5_RELEASE_DEPLOY_KEY }}
-          fips_mode: ${{ github.event.inputs.fips_mode || 'normal' }}
-          fips_method: ${{ github.event.inputs.fips_method || 'source' }}
+          release_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+
+      - name: Persist new version to S3
+        if: success()
+        uses: ./.github/actions/update-version-s3
+        with:
+          bucket_name: ${{ vars.BUCKET_NAME }}
+          key: versions/stack-${{ vars.STACK }}
+          version: ${{ needs.gather-resources.outputs.version }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
       - name: Dispatch Test Workflow
         if: success()
         uses: ./.github/actions/trigger-test-workflow
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
           version: ${{ needs.gather-resources.outputs.version }}
-          fips_mode: ${{ github.event.inputs.fips_mode || 'normal' }}
-          fips_method: ${{ github.event.inputs.fips_method || 'source' }}
 
   build-summary:
     name: Build Summary

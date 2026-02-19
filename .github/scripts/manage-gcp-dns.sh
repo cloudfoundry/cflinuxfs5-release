@@ -63,12 +63,9 @@ main() {
   if [[ -d "${BBL_STATE_DIR}" ]]; then
     echo "Extracting DNS servers from BBL state..."
 
-    # Ensure terraform is in PATH for BBL
-    export PATH="/usr/local/bin:$PATH"
-    
     while IFS= read -r dns_server; do
       dns_servers+=("${dns_server}")
-    done < <(bbl --state-dir "${BBL_STATE_DIR}" lbs --json --terraform-binary /usr/local/bin/terraform | jq -r '.cf_system_domain_dns_servers[]')
+    done < <(bbl --state-dir "${BBL_STATE_DIR}" lbs --json | jq -r '.cf_system_domain_dns_servers[]')
   else
     echo "ERROR: BBL state directory not found: ${BBL_STATE_DIR}"
     exit 1
@@ -146,7 +143,7 @@ main() {
     echo "Waiting 90 seconds before DNS verification to avoid NXDOMAIN caching..."
     sleep 90
 
-    DOMAIN="api.${GCP_DNS_RECORD_SET_NAME}"
+    DOMAIN="pcf.${GCP_DNS_RECORD_SET_NAME}"
     check_dns "${DOMAIN}"
   fi
 }

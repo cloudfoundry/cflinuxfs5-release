@@ -8,14 +8,6 @@ inputs:
   version:
     description: 'Version to release'
     required: true
-  fips_mode:
-    description: 'FIPS mode (normal or fips)'
-    required: false
-    default: 'normal'
-  fips_method:
-    description: 'FIPS build method (source or ubuntu-pro)'
-    required: false
-    default: 'source'
 
 runs:
   using: 'composite'
@@ -28,7 +20,5 @@ runs:
         client-payload: |
           {
             "version": "${{ inputs.version }}",
-            "cats_passed": "true",
-            "fips_mode": "${{ inputs.fips_mode }}",
-            "fips_method": "${{ inputs.fips_method }}"
+            "cats_passed": "true"
           }

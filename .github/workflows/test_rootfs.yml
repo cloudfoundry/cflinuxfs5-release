@@ -9,30 +9,14 @@ on:
         description: 'Version to test'
         default: '1.0.0-rc.1'
         required: true
-      fips_mode:
-        description: 'FIPS mode'
-        type: choice
-        required: false
-        default: 'normal'
-        options:
-          - normal
-          - fips
-      fips_method:
-        description: 'FIPS build method'
-        type: choice
-        required: false
-        default: 'source'
-        options:
-          - source
-          - ubuntu-pro
       skip_cleanup:
         description: 'Skip infrastructure cleanup'
         type: boolean
-        default: true
+        default: false
       skip_setup:
         description: 'Skip setup test environment'
         type: boolean
-        default: true
+        default: false
       skip_deploy:
         description: 'Skip Deploy CF'
         type: boolean
@@ -57,11 +41,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set-vars.outputs.version }}
-      fips_mode: ${{ steps.set-vars.outputs.fips_mode }}
-      fips_method: ${{ steps.set-vars.outputs.fips_method }}
-      effective_stack: ${{ steps.effective-names.outputs.effective_stack }}
-      effective_env_name: ${{ steps.effective-names.outputs.effective_env_name }}
-      effective_domain: ${{ steps.effective-names.outputs.effective_domain }}
       skip_cleanup: ${{ steps.set-vars.outputs.skip_cleanup }}
       skip_setup: ${{ steps.set-vars.outputs.skip_setup }}
       skip_deploy: ${{ steps.set-vars.outputs.skip_deploy }}
@@ -76,30 +55,10 @@ jobs:
         with:
           repository_dispatch_version: ${{ github.event.client_payload.version }}
           workflow_dispatch_version: ${{ github.event.inputs.version }}
-          fips_mode: ${{ github.event.client_payload.fips_mode || github.event.inputs.fips_mode || 'normal' }}
-          fips_method: ${{ github.event.client_payload.fips_method || github.event.inputs.fips_method || 'source' }}
           skip_cleanup: ${{ github.event.client_payload.skip_cleanup || github.event.inputs.skip_cleanup || 'true' }}
           skip_setup: ${{ github.event.client_payload.skip_setup || github.event.inputs.skip_setup || 'true' }}
           skip_deploy: ${{ github.event.client_payload.skip_deploy || github.event.inputs.skip_deploy || 'true' }}
           skip_cats: ${{ github.event.client_payload.skip_cats || github.event.inputs.skip_cats || 'false' }}
-
-      - name: Compute effective stack, env_name and domain
-        id: effective-names
-        shell: bash
-        run: |
-          set -euo pipefail
-          STACK="${{ vars.STACK }}"
-          SYSTEM_DOMAIN="${{ vars.SYSTEM_DOMAIN }}"
-          FIPS_MODE="${{ steps.set-vars.outputs.fips_mode }}"
-          if [[ "$FIPS_MODE" == "fips" ]]; then
-            echo "effective_stack=${STACK}-fips" >> $GITHUB_OUTPUT
-            echo "effective_env_name=${STACK}-fips" >> $GITHUB_OUTPUT
-            echo "effective_domain=fips-${SYSTEM_DOMAIN}" >> $GITHUB_OUTPUT
-          else
-            echo "effective_stack=${STACK}" >> $GITHUB_OUTPUT
-            echo "effective_env_name=${STACK}" >> $GITHUB_OUTPUT
-            echo "effective_domain=${SYSTEM_DOMAIN}" >> $GITHUB_OUTPUT
-          fi
 
   setup-test-environment:
     name: Setup Test Environment
@@ -118,22 +77,20 @@ jobs:
         with:
           stack: ${{ vars.STACK }}
           version: ${{ needs.resolve-inputs.outputs.version }}
-          env_name: ${{ needs.resolve-inputs.outputs.effective_env_name }}
-          lb_domain: ${{ needs.resolve-inputs.outputs.effective_domain }}
+          env_name: ${{ vars.STACK }}
+          lb_domain: ${{ vars.SYSTEM_DOMAIN }}
           gcp_project_id: ${{ vars.GCP_PROJECT_ID }}
           gcp_zone: ${{ vars.GCP_ZONE }}
           gcp_region: ${{ vars.GCP_REGION }}
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
-          lb_cert: ${{ secrets.CFLINUXFS5_LB_CERT }}
-          lb_key: ${{ secrets.CFLINUXFS5_LB_KEY }}
+          bbl_state_branch: master
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
-          gcp_dns_zone_name: ${{ vars.GCP_DNS_ZONE_NAME }}
-          gcp_dns_service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         env:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           CFLINUXFS5_LB_CERT: ${{ secrets.CFLINUXFS5_LB_CERT }}
           CFLINUXFS5_LB_KEY: ${{ secrets.CFLINUXFS5_LB_KEY }}
+          GCP_DNS_ZONE_NAME: ${{ vars.GCP_DNS_ZONE_NAME }}
+          GCP_DOMAIN_NAME: ${{ vars.SYSTEM_DOMAIN}}
 
       - name: Wait after BBL up
         run: |
@@ -159,14 +116,13 @@ jobs:
         id: deploy
         uses: ./.github/actions/deploy-cf
         with:
-          stack: ${{ needs.resolve-inputs.outputs.effective_stack }}
-          env_name: ${{ needs.resolve-inputs.outputs.effective_env_name }}
+          stack: ${{ vars.STACK }}
+          env_name: ${{ vars.STACK }}
           version: ${{ needs.resolve-inputs.outputs.version }}
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
-          system_domain: ${{ needs.resolve-inputs.outputs.effective_domain }}
+          bbl_state_branch: master
+          system_domain: ${{ vars.SYSTEM_DOMAIN }}
           bucket_name: ${{ vars.BUCKET_NAME }}
-          ops_file_repo: ${{ vars.OPS_FILE_REPO }}
           ops_file: ${{ vars.OPS_FILE }}
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
         env:
@@ -196,9 +152,9 @@ jobs:
         uses: ./.github/actions/run-cats
         with:
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
-          system_domain: ${{ needs.resolve-inputs.outputs.effective_domain }}
-          env_name: ${{ needs.resolve-inputs.outputs.effective_env_name }}
+          bbl_state_branch: master
+          system_domain: ${{ vars.SYSTEM_DOMAIN }}
+          env_name: ${{ vars.STACK }}
           nodes: 4
           flake_attempts: 3
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
@@ -220,10 +176,10 @@ jobs:
         id: race-check
         uses: ./.github/actions/check-race-condition
         with:
-          stack: ${{ needs.resolve-inputs.outputs.effective_stack }}
+          stack: ${{ vars.STACK }}
           owner: ${{ github.repository_owner }}
           current_version: ${{ needs.resolve-inputs.outputs.version }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
 
   cleanup-deployments:
     name: Cleanup CF Deployments
@@ -239,9 +195,9 @@ jobs:
       - name: Cleanup deployments
         uses: ./.github/actions/cleanup-deployments
         with:
-          stack: ${{ needs.resolve-inputs.outputs.effective_env_name }}
+          stack: ${{ vars.STACK }}
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
+          bbl_state_branch: master
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
         env:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
@@ -262,19 +218,19 @@ jobs:
       - name: Destroy test environment
         uses: ./.github/actions/bbl-destroy
         with:
-          env_name: ${{ needs.resolve-inputs.outputs.effective_env_name }}
+          env_name: ${{ vars.STACK }}
           gcp_project_id: ${{ vars.GCP_PROJECT_ID }}
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
+          bbl_state_branch: master
           gcp_zone: ${{ vars.GCP_ZONE }}
           gcp_region: ${{ vars.GCP_REGION }}
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
-          gcp_dns_zone_name: ${{ vars.GCP_DNS_ZONE_NAME }}
-          gcp_dns_record_set_name: ${{ needs.resolve-inputs.outputs.effective_domain }}
         env:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           CFLINUXFS5_LB_CERT: ${{ secrets.CFLINUXFS5_LB_CERT }}
           CFLINUXFS5_LB_KEY: ${{ secrets.CFLINUXFS5_LB_KEY }}
+          GCP_DNS_ZONE_NAME: ${{ vars.GCP_DNS_ZONE_NAME }}
+          GCP_DOMAIN_NAME: ${{ vars.SYSTEM_DOMAIN}}
 
   trigger-release-workflow:
     name: Trigger Release Workflow
@@ -291,10 +247,8 @@ jobs:
       - name: Trigger Release Workflow
         uses: ./.github/actions/trigger-release-workflow
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
           version: ${{ needs.resolve-inputs.outputs.version }}
-          fips_mode: ${{ needs.resolve-inputs.outputs.fips_mode }}
-          fips_method: ${{ needs.resolve-inputs.outputs.fips_method }}
 
   test-summary:
     name: Test Summary
