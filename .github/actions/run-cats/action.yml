@@ -150,7 +150,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack binary_buildpack -f || true
-        cf create-buildpack binary_buildpack "https://v96161d7o2.ufs.sh/f/mpjH2zGjR1kP361kcIMBSlE41WVDgbYQamtHMPncOA8KuCoJ" 7
+        cf create-buildpack binary_buildpack "https://github.com/ivo1116/binary-buildpack/releases/download/v1.1.26-cflinuxfs5/binary_buildpack-cflinuxfs5-v1.1.26.zip" 7
         cf update-buildpack binary_buildpack --assign-stack cflinuxfs5
 
     - name: Upload DotNet Core buildpack
