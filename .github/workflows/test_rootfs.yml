@@ -134,7 +134,6 @@ jobs:
     name: Run Cloud Foundry Acceptance Tests
     needs: [deploy-cf, resolve-inputs]
     runs-on: ubuntu-latest
-    continue-on-error: true
     if: |
       always() && 
       needs.resolve-inputs.outputs.skip_cats != 'true' && (
