@@ -174,7 +174,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_php_buildpack_fs5 -f || true
-        cf create-buildpack cats_php_buildpack_fs5 "https://github.com/ivo1116/php-buildpack/releases/download/v4.7.0-cflinuxfs5/buildpack.zip" 10
+        cf create-buildpack cats_php_buildpack_fs5 "https://github.com/ivo1116/php-buildpack/releases/download/v5.0.3-cflinuxfs5/php_buildpack-cached-cflinuxfs5-v4.7.0-cflinuxfs5.zip" 10
         cf update-buildpack cats_php_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload R buildpack
@@ -182,7 +182,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_r_buildpack_fs5 -f || true
-        cf create-buildpack cats_r_buildpack_fs5 "https://github.com/ivo1116/r-buildpack/releases/download/v1.2.15-cflinuxfs5/buildpack.zip" 11
+        cf create-buildpack cats_r_buildpack_fs5 "https://github.com/ivo1116/r-buildpack/releases/download/v1.2.26-cflinuxfs5/r_buildpack-cached-cflinuxfs5-v1.2.27.zip" 11
         cf update-buildpack cats_r_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Create CATS config
