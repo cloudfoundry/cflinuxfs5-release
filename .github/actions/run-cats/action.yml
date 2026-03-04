@@ -102,7 +102,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_go_buildpack_fs5 -f || true
-        cf create-buildpack cats_go_buildpack_fs5 "https://github.com/ivanovac/go-buildpack/releases/download/v1.11.00-beta-cflinuxfs5/buildpack.zip" 1
+        cf create-buildpack cats_go_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/go_buildpack-cflinuxfs5-v1.11.00.zip" 1
         cf update-buildpack cats_go_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload Ruby buildpack
@@ -110,7 +110,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_ruby_buildpack_fs5 -f || true
-        cf create-buildpack cats_ruby_buildpack_fs5 "https://github.com/ivanovac/ruby-buildpack/releases/download/v1.11.06-beta-cflinuxfs5/ruby_buildpack-cached-cflinuxfs5-v1.11.06-beta.zip" 2
+        cf create-buildpack cats_ruby_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/ruby_buildpack-cflinuxfs5-v1.11.06.zip" 2
         cf update-buildpack cats_ruby_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload Node.js buildpack
@@ -118,7 +118,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_nodejs_buildpack_fs5 -f || true
-        cf create-buildpack cats_nodejs_buildpack_fs5 "https://github.com/ivo1116/nodejs-buildpack/releases/download/v1.9.2-cflinuxfs5/buildpack.zip" 3
+        cf create-buildpack cats_nodejs_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/nodejs_buildpack-cflinuxfs5-v1.9.2.zip" 3
         cf update-buildpack cats_nodejs_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload Python buildpack
@@ -126,7 +126,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_python_buildpack_fs5 -f || true
-        cf create-buildpack cats_python_buildpack_fs5 "https://github.com/ivanovac/python-buildpack/releases/download/v1.9.1-beta/buildpack.zip" 4
+        cf create-buildpack cats_python_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/python_buildpack-cflinuxfs5-v1.9.1.zip" 4
         cf update-buildpack cats_python_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload Staticfile buildpack
@@ -134,7 +134,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_staticfile_buildpack_fs5 -f || true
-        cf create-buildpack cats_staticfile_buildpack_fs5 "https://github.com/ivo1116/staticfile-buildpack/releases/download/v1.7.1-cflinuxfs5/buildpack.zip" 5
+        cf create-buildpack cats_staticfile_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/staticfile_buildpack-cflinuxfs5-v1.7.1.zip" 5
         cf update-buildpack cats_staticfile_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload Nginx buildpack
@@ -142,7 +142,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_nginx_buildpack_fs5 -f || true
-        cf create-buildpack cats_nginx_buildpack_fs5 "https://github.com/ivanovac/nginx-buildpack/releases/download/v1.3.0-beta/nginx_buildpack-v1.3.0-beta.zip" 6
+        cf create-buildpack cats_nginx_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/nginx_buildpack-cflinuxfs5-v1.3.0.zip" 6
         cf update-buildpack cats_nginx_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload Binary buildpack
@@ -150,7 +150,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_binary_buildpack_fs5 -f || true
-        cf create-buildpack cats_binary_buildpack_fs5 "https://github.com/ivo1116/binary-buildpack/releases/download/v1.1.26-cflinuxfs5/binary_buildpack-cflinuxfs5-v1.1.26.zip" 7
+        cf create-buildpack cats_binary_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/binary_buildpack-cflinuxfs5-v1.1.26.zip" 7
         cf update-buildpack cats_binary_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload DotNet Core buildpack
@@ -158,7 +158,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_dotnet_core_buildpack_fs5 -f || true
-        cf create-buildpack cats_dotnet_core_buildpack_fs5 "https://github.com/ivo1116/dotnet-core-buildpack/releases/download/v2.5.2-cflinuxfs5/buildpack.zip" 8
+        cf create-buildpack cats_dotnet_core_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/dotnet_core_buildpack-cflinuxfs5-v2.5.2.zip" 8
         cf update-buildpack cats_dotnet_core_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload Java buildpack
@@ -166,7 +166,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_java_buildpack_fs5 -f || true
-        cf create-buildpack cats_java_buildpack_fs5 "https://github.com/ivo1116/java-buildpack/releases/download/v4.75.0-cflinuxfs5/java-buildpack-f5848d11.zip" 9
+        cf create-buildpack cats_java_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/java_buildpack-cflinuxfs5-v4.75.0.zip" 9
         cf update-buildpack cats_java_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload PHP buildpack
@@ -174,7 +174,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_php_buildpack_fs5 -f || true
-        cf create-buildpack cats_php_buildpack_fs5 "https://github.com/ivo1116/php-buildpack/releases/download/v5.0.3-cflinuxfs5/php_buildpack-cached-cflinuxfs5-v4.7.0-cflinuxfs5.zip" 10
+        cf create-buildpack cats_php_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/php_buildpack-cflinuxfs5-v5.0.3.zip" 10
         cf update-buildpack cats_php_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Upload R buildpack
@@ -182,7 +182,7 @@ runs:
       run: |
         set -euo pipefail
         cf delete-buildpack cats_r_buildpack_fs5 -f || true
-        cf create-buildpack cats_r_buildpack_fs5 "https://github.com/ivo1116/r-buildpack/releases/download/v1.2.26-cflinuxfs5/r_buildpack-cached-cflinuxfs5-v1.2.27.zip" 11
+        cf create-buildpack cats_r_buildpack_fs5 "https://cflinuxfs5test.s3.us-east-1.amazonaws.com/buildpacks/r_buildpack-cflinuxfs5-v1.2.26.zip" 11
         cf update-buildpack cats_r_buildpack_fs5 --assign-stack cflinuxfs5
 
     - name: Create CATS config
