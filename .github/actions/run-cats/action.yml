@@ -18,6 +18,10 @@ inputs:
   system_domain:
     description: 'CF system domain'
     required: true
+  stack:
+    description: 'Stack to test (e.g., cflinuxfs5)'
+    required: false
+    default: 'cflinuxfs5'
   nodes:
     description: 'Number of parallel test nodes'
     required: false
@@ -33,7 +37,7 @@ inputs:
   buildpacks_bucket:
     description: 'S3 bucket containing buildpacks'
     required: false
-    default: 'cflinuxfs5test'
+    default: 'cflinuxfs5-release'
 
 outputs:
   success:
@@ -101,64 +105,48 @@ runs:
           -u admin \
           -p "${{ steps.creds.outputs.admin_password }}"
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
     - name: Download buildpacks from S3
-      shell: bash
-      run: |
-        set -euo pipefail
-        mkdir -p buildpacks
-        
-        BUCKET="${{ inputs.buildpacks_bucket }}"
-        
-        echo "Downloading buildpacks from s3://${BUCKET}/buildpacks/..."
-        aws s3 cp "s3://${BUCKET}/buildpacks/go_buildpack-cflinuxfs5-v1.11.00.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/ruby_buildpack-cflinuxfs5-v1.11.06.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/nodejs_buildpack-cflinuxfs5-v1.9.2.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/python_buildpack-cflinuxfs5-v1.9.1.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/staticfile_buildpack-cflinuxfs5-v1.7.1.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/nginx_buildpack-cflinuxfs5-v1.3.0.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/binary_buildpack-cflinuxfs5-v1.1.26.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/dotnet_core_buildpack-cflinuxfs5-v2.5.2.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/java_buildpack-cflinuxfs5-v4.75.0.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/php_buildpack-cflinuxfs5-v5.0.3.zip" buildpacks/
-        aws s3 cp "s3://${BUCKET}/buildpacks/r_buildpack-cflinuxfs5-v1.2.26.zip" buildpacks/
-        
-        echo "Downloaded buildpacks:"
-        ls -la buildpacks/
+      id: buildpacks
+      uses: ./.github/actions/download-buildpacks
+      with:
+        stack: ${{ inputs.stack }}
+        bucket_name: ${{ inputs.buildpacks_bucket }}
+        output_dir: buildpacks
 
     - name: Upload buildpacks to CF
       shell: bash
       run: |
         set -euo pipefail
         
+        STACK="${{ inputs.stack }}"
+        
         upload_buildpack() {
           local name=$1
           local file=$2
           local position=$3
           
+          if [ -z "$file" ] || [ ! -f "$file" ]; then
+            echo "WARNING: Buildpack file not found for $name, skipping..."
+            return 0
+          fi
+          
           echo "Uploading $name from $file..."
           cf delete-buildpack "$name" -f || true
           cf create-buildpack "$name" "$file" "$position"
-          cf update-buildpack "$name" --assign-stack cflinuxfs5
+          cf update-buildpack "$name" --assign-stack "$STACK"
         }
         
-        upload_buildpack cats_go_buildpack_fs5 buildpacks/go_buildpack-cflinuxfs5-v1.11.00.zip 1
-        upload_buildpack cats_ruby_buildpack_fs5 buildpacks/ruby_buildpack-cflinuxfs5-v1.11.06.zip 2
-        upload_buildpack cats_nodejs_buildpack_fs5 buildpacks/nodejs_buildpack-cflinuxfs5-v1.9.2.zip 3
-        upload_buildpack cats_python_buildpack_fs5 buildpacks/python_buildpack-cflinuxfs5-v1.9.1.zip 4
-        upload_buildpack cats_staticfile_buildpack_fs5 buildpacks/staticfile_buildpack-cflinuxfs5-v1.7.1.zip 5
-        upload_buildpack cats_nginx_buildpack_fs5 buildpacks/nginx_buildpack-cflinuxfs5-v1.3.0.zip 6
-        upload_buildpack cats_binary_buildpack_fs5 buildpacks/binary_buildpack-cflinuxfs5-v1.1.26.zip 7
-        upload_buildpack cats_dotnet_core_buildpack_fs5 buildpacks/dotnet_core_buildpack-cflinuxfs5-v2.5.2.zip 8
-        upload_buildpack cats_java_buildpack_fs5 buildpacks/java_buildpack-cflinuxfs5-v4.75.0.zip 9
-        upload_buildpack cats_php_buildpack_fs5 buildpacks/php_buildpack-cflinuxfs5-v5.0.3.zip 10
-        upload_buildpack cats_r_buildpack_fs5 buildpacks/r_buildpack-cflinuxfs5-v1.2.26.zip 11
+        upload_buildpack "cats_go_buildpack_${STACK}" "${{ steps.buildpacks.outputs.go_buildpack }}" 1
+        upload_buildpack "cats_ruby_buildpack_${STACK}" "${{ steps.buildpacks.outputs.ruby_buildpack }}" 2
+        upload_buildpack "cats_nodejs_buildpack_${STACK}" "${{ steps.buildpacks.outputs.nodejs_buildpack }}" 3
+        upload_buildpack "cats_python_buildpack_${STACK}" "${{ steps.buildpacks.outputs.python_buildpack }}" 4
+        upload_buildpack "cats_staticfile_buildpack_${STACK}" "${{ steps.buildpacks.outputs.staticfile_buildpack }}" 5
+        upload_buildpack "cats_nginx_buildpack_${STACK}" "${{ steps.buildpacks.outputs.nginx_buildpack }}" 6
+        upload_buildpack "cats_binary_buildpack_${STACK}" "${{ steps.buildpacks.outputs.binary_buildpack }}" 7
+        upload_buildpack "cats_dotnet_core_buildpack_${STACK}" "${{ steps.buildpacks.outputs.dotnet_core_buildpack }}" 8
+        upload_buildpack "cats_java_buildpack_${STACK}" "${{ steps.buildpacks.outputs.java_buildpack }}" 9
+        upload_buildpack "cats_php_buildpack_${STACK}" "${{ steps.buildpacks.outputs.php_buildpack }}" 10
+        upload_buildpack "cats_r_buildpack_${STACK}" "${{ steps.buildpacks.outputs.r_buildpack }}" 11
         
         echo "All buildpacks uploaded successfully!"
 
@@ -167,6 +155,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        STACK="${{ inputs.stack }}"
         CONFIG_FILE=$(mktemp)
         cat > $CONFIG_FILE <<EOF
         {
@@ -176,7 +165,7 @@ runs:
           "admin_password": "${{ steps.creds.outputs.admin_password }}",
           "skip_ssl_validation": true,
           "timeout_scale": 2,
-          "stacks": ["cflinuxfs5"],
+          "stacks": ["${STACK}"],
           "use_existing_organization": false,
           "use_existing_space": false,
           "include_apps": true,
@@ -203,17 +192,17 @@ runs:
           "skip_php": false,
           "skip_dotnet": false,
           "skip_staticfile": false,
-          "go_buildpack_name": "cats_go_buildpack_fs5",
-          "ruby_buildpack_name": "cats_ruby_buildpack_fs5",
-          "nodejs_buildpack_name": "cats_nodejs_buildpack_fs5",
-          "python_buildpack_name": "cats_python_buildpack_fs5",
-          "staticfile_buildpack_name": "cats_staticfile_buildpack_fs5",
-          "nginx_buildpack_name": "cats_nginx_buildpack_fs5",
-          "binary_buildpack_name": "cats_binary_buildpack_fs5",
-          "dotnet_core_buildpack_name": "cats_dotnet_core_buildpack_fs5",
-          "java_buildpack_name": "cats_java_buildpack_fs5",
-          "php_buildpack_name": "cats_php_buildpack_fs5",
-          "r_buildpack_name": "cats_r_buildpack_fs5"
+          "go_buildpack_name": "cats_go_buildpack_${STACK}",
+          "ruby_buildpack_name": "cats_ruby_buildpack_${STACK}",
+          "nodejs_buildpack_name": "cats_nodejs_buildpack_${STACK}",
+          "python_buildpack_name": "cats_python_buildpack_${STACK}",
+          "staticfile_buildpack_name": "cats_staticfile_buildpack_${STACK}",
+          "nginx_buildpack_name": "cats_nginx_buildpack_${STACK}",
+          "binary_buildpack_name": "cats_binary_buildpack_${STACK}",
+          "dotnet_core_buildpack_name": "cats_dotnet_core_buildpack_${STACK}",
+          "java_buildpack_name": "cats_java_buildpack_${STACK}",
+          "php_buildpack_name": "cats_php_buildpack_${STACK}",
+          "r_buildpack_name": "cats_r_buildpack_${STACK}"
         }
         EOF
         echo "config=$CONFIG_FILE" >> $GITHUB_OUTPUT
@@ -244,14 +233,15 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        cf delete-buildpack cats_go_buildpack_fs5 -f || true
-        cf delete-buildpack cats_ruby_buildpack_fs5 -f || true
-        cf delete-buildpack cats_nodejs_buildpack_fs5 -f || true
-        cf delete-buildpack cats_python_buildpack_fs5 -f || true
-        cf delete-buildpack cats_staticfile_buildpack_fs5 -f || true
-        cf delete-buildpack cats_nginx_buildpack_fs5 -f || true
-        cf delete-buildpack cats_binary_buildpack_fs5 -f || true
-        cf delete-buildpack cats_dotnet_core_buildpack_fs5 -f || true
-        cf delete-buildpack cats_java_buildpack_fs5 -f || true
-        cf delete-buildpack cats_php_buildpack_fs5 -f || true
-        cf delete-buildpack cats_r_buildpack_fs5 -f || true
+        STACK="${{ inputs.stack }}"
+        cf delete-buildpack "cats_go_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_ruby_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_nodejs_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_python_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_staticfile_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_nginx_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_binary_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_dotnet_core_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_java_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_php_buildpack_${STACK}" -f || true
+        cf delete-buildpack "cats_r_buildpack_${STACK}" -f || true
