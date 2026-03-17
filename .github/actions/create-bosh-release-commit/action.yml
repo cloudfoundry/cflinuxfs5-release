@@ -44,8 +44,21 @@ runs:
 
         git fetch origin
 
+        # Stash any unstaged changes before rebasing to avoid "cannot rebase: You have unstaged changes" error
+        stash_result=$(git stash push -m "Temporary stash for rebase" 2>&1) || true
+        stashed=false
+        if [[ "$stash_result" != *"No local changes to save"* ]]; then
+          stashed=true
+          echo "Stashed unstaged changes before rebase"
+        fi
+
         # Rebase onto latest remote to handle commits pushed while workflow ran
         git rebase origin/${GITHUB_REF_NAME}
+
+        # Restore stashed changes if any
+        if [[ "$stashed" == "true" ]]; then
+          git stash pop || echo "Warning: Could not restore stashed changes"
+        fi
 
         git push origin HEAD:${GITHUB_REF_NAME}
 
