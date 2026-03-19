@@ -25,12 +25,34 @@ runs:
     shell: bash
     run: |
       set -euo pipefail
-      
+
       pushd "${{ inputs.release_dir }}"
 
         git config user.name "${{ inputs.git_user_name }}"
         git config user.email "${{ inputs.git_user_email }}"
 
+        # Fetch the latest remote state
+        git fetch origin
+
+        # Save the release artifacts we want to commit
+        echo "Saving release artifacts..."
+        mkdir -p /tmp/release-artifacts
+        cp -r .final_builds /tmp/release-artifacts/ 2>/dev/null || true
+        cp -r releases /tmp/release-artifacts/ 2>/dev/null || true
+        cp config/blobs.yml /tmp/release-artifacts/ 2>/dev/null || true
+
+        # Reset to the latest remote branch to avoid rebase conflicts
+        echo "Resetting to latest origin/${GITHUB_REF_NAME}..."
+        git reset --hard origin/${GITHUB_REF_NAME}
+
+        # Restore the release artifacts
+        echo "Restoring release artifacts..."
+        cp -r /tmp/release-artifacts/.final_builds . 2>/dev/null || true
+        cp -r /tmp/release-artifacts/releases . 2>/dev/null || true
+        mkdir -p config
+        cp /tmp/release-artifacts/blobs.yml config/ 2>/dev/null || true
+
+        # Stage and commit the release artifacts
         git add config/blobs.yml
         git add .final_builds/
         git add releases/
@@ -42,28 +64,13 @@ runs:
           git commit -m "Finalize BOSH release"
         fi
 
-        git fetch origin
-
-        # Stash any unstaged changes before rebasing to avoid "cannot rebase: You have unstaged changes" error
-        stash_result=$(git stash push -m "Temporary stash for rebase" 2>&1) || true
-        stashed=false
-        if [[ "$stash_result" != *"No local changes to save"* ]]; then
-          stashed=true
-          echo "Stashed unstaged changes before rebase"
-        fi
-
-        # Rebase onto latest remote to handle commits pushed while workflow ran
-        git rebase origin/${GITHUB_REF_NAME}
-
-        # Restore stashed changes if any
-        if [[ "$stashed" == "true" ]]; then
-          git stash pop || echo "Warning: Could not restore stashed changes"
-        fi
-
         git push origin HEAD:${GITHUB_REF_NAME}
 
         sha=$(git rev-parse HEAD)
 
         echo "commit_sha=$sha" >> "$GITHUB_OUTPUT"
+
+        # Cleanup
+        rm -rf /tmp/release-artifacts
 
       popd
