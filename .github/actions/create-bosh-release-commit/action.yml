@@ -20,31 +20,57 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Commit and push changes
-      id: commit
-      shell: bash
-      run: |
-        set -euo pipefail
-        
-        pushd "${{ inputs.release_dir }}"
+  - name: Commit and push changes
+    id: commit
+    shell: bash
+    run: |
+      set -euo pipefail
 
-          git config user.name "${{ inputs.git_user_name }}"
-          git config user.email "${{ inputs.git_user_email }}"
+      pushd "${{ inputs.release_dir }}"
 
-          git add config/blobs.yml
-          git add .final_builds/
-          git add releases/
+        git config user.name "${{ inputs.git_user_name }}"
+        git config user.email "${{ inputs.git_user_email }}"
 
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-            sha=$(git rev-parse HEAD)
-          else
-            git commit -m "Finalize BOSH release"
-            sha=$(git rev-parse HEAD)
-          fi
+        # Fetch the latest remote state
+        git fetch origin
 
-          git push origin HEAD:${GITHUB_REF_NAME}
+        # Save the release artifacts we want to commit
+        echo "Saving release artifacts..."
+        mkdir -p /tmp/release-artifacts
+        cp -r .final_builds /tmp/release-artifacts/ 2>/dev/null || true
+        cp -r releases /tmp/release-artifacts/ 2>/dev/null || true
+        cp config/blobs.yml /tmp/release-artifacts/ 2>/dev/null || true
 
-          echo "commit_sha=$sha" >> "$GITHUB_OUTPUT"
+        # Reset to the latest remote branch to avoid rebase conflicts
+        echo "Resetting to latest origin/${GITHUB_REF_NAME}..."
+        git reset --hard origin/${GITHUB_REF_NAME}
 
-        popd
+        # Restore the release artifacts
+        echo "Restoring release artifacts..."
+        cp -r /tmp/release-artifacts/.final_builds . 2>/dev/null || true
+        cp -r /tmp/release-artifacts/releases . 2>/dev/null || true
+        mkdir -p config
+        cp /tmp/release-artifacts/blobs.yml config/ 2>/dev/null || true
+
+        # Stage and commit the release artifacts
+        git add config/blobs.yml
+        git add .final_builds/
+        git add releases/
+
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+          sha=$(git rev-parse HEAD)
+        else
+          git commit -m "Finalize BOSH release"
+        fi
+
+        git push origin HEAD:${GITHUB_REF_NAME}
+
+        sha=$(git rev-parse HEAD)
+
+        echo "commit_sha=$sha" >> "$GITHUB_OUTPUT"
+
+        # Cleanup
+        rm -rf /tmp/release-artifacts
+
+      popd
