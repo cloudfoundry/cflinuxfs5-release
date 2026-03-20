@@ -17,13 +17,13 @@ inputs:
   bbl_state_branch:
     description: 'Branch of the bbl state repo'
     required: false
-    default: main
+    default: master
   bbl_state_deploy_key:
     description: 'SSH deploy key for BBL state repo'
     required: true
   ops_file_repo:
     description: 'Git repo conataining the ops file'
-    required: true
+    required: false
   ops_file:
     description: 'use cflinuxfs ops file'
     default: "ops-file/use-{your-cflinuxfs-version}.yml"
@@ -61,13 +61,6 @@ runs:
         ref: main
         path: cf-deployment
 
-    - name: Checkout test ops file repo
-      uses: actions/checkout@v4
-      with:
-        repository: ${{ inputs.ops_file_repo }}
-        ref: main
-        path: ops-file
-
     - name: Setup tools (bosh, bbl)
       shell: bash
       run: |
@@ -94,7 +87,7 @@ runs:
       run: |
         set -euo pipefail
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
-        eval "$(bbl print-env --state-dir $BBL_STATE_DIR)"
+        eval "$(bbl print-env --shell-type posix --state-dir $BBL_STATE_DIR)"
         bosh upload-stemcell https://bosh.io/d/stemcells/bosh-google-kvm-ubuntu-noble?v=1.25
 
     - name: Upload cflinux release
@@ -104,7 +97,7 @@ runs:
         STACK="${{ inputs.stack }}"
         VERSION="${{ inputs.version }}"
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
-        eval "$(bbl print-env --state-dir $BBL_STATE_DIR)"
+        eval "$(bbl print-env --shell-type posix --state-dir $BBL_STATE_DIR)"
         bosh upload-release rootfs-artifacts/${STACK}-release-${VERSION}.tgz
 
     - name: Deploy CF with the new rootfs
@@ -114,8 +107,8 @@ runs:
         set -euo pipefail
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
         DOMAIN="${{ inputs.system_domain }}"
-        OPS_FILE="ops-file/${{ inputs.ops_file }}"
-        eval "$(bbl print-env --state-dir $BBL_STATE_DIR)"
+        OPS_FILE=".github/ops/${{ inputs.ops_file }}"
+        eval "$(bbl print-env --shell-type posix --state-dir $BBL_STATE_DIR)"
         
         deploy_cf() {
           bosh -n -d cf deploy cf-deployment/cf-deployment.yml \

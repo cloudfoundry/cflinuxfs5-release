@@ -83,14 +83,14 @@ jobs:
           gcp_zone: ${{ vars.GCP_ZONE }}
           gcp_region: ${{ vars.GCP_REGION }}
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
-          lb_cert: ${{ secrets.CFLINUXFS5_LB_CERT }}
-          lb_key: ${{ secrets.CFLINUXFS5_LB_KEY }}
+          bbl_state_branch: master
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
         env:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           CFLINUXFS5_LB_CERT: ${{ secrets.CFLINUXFS5_LB_CERT }}
           CFLINUXFS5_LB_KEY: ${{ secrets.CFLINUXFS5_LB_KEY }}
+          GCP_DNS_ZONE_NAME: ${{ vars.GCP_DNS_ZONE_NAME }}
+          GCP_DOMAIN_NAME: ${{ vars.SYSTEM_DOMAIN}}
 
       - name: Wait after BBL up
         run: |
@@ -120,10 +120,9 @@ jobs:
           env_name: ${{ vars.STACK }}
           version: ${{ needs.resolve-inputs.outputs.version }}
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
+          bbl_state_branch: master
           system_domain: ${{ vars.SYSTEM_DOMAIN }}
           bucket_name: ${{ vars.BUCKET_NAME }}
-          ops_file_repo: ${{ vars.OPS_FILE_REPO }}
           ops_file: ${{ vars.OPS_FILE }}
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
         env:
@@ -135,7 +134,6 @@ jobs:
     name: Run Cloud Foundry Acceptance Tests
     needs: [deploy-cf, resolve-inputs]
     runs-on: ubuntu-latest
-    continue-on-error: true
     if: |
       always() && 
       needs.resolve-inputs.outputs.skip_cats != 'true' && (
@@ -153,12 +151,17 @@ jobs:
         uses: ./.github/actions/run-cats
         with:
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
+          bbl_state_branch: master
           system_domain: ${{ vars.SYSTEM_DOMAIN }}
           env_name: ${{ vars.STACK }}
           nodes: 4
           flake_attempts: 3
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
+          buildpacks_bucket: ${{ vars.BUCKET_NAME }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
   check-race-condition:
     name: Check for Race Conditions
@@ -180,7 +183,7 @@ jobs:
           stack: ${{ vars.STACK }}
           owner: ${{ github.repository_owner }}
           current_version: ${{ needs.resolve-inputs.outputs.version }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
 
   cleanup-deployments:
     name: Cleanup CF Deployments
@@ -198,7 +201,7 @@ jobs:
         with:
           stack: ${{ vars.STACK }}
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
+          bbl_state_branch: master
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
         env:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
@@ -222,7 +225,7 @@ jobs:
           env_name: ${{ vars.STACK }}
           gcp_project_id: ${{ vars.GCP_PROJECT_ID }}
           bbl_state_repo: ${{ vars.BUILDPACKS_ENVS_REPO }}
-          bbl_state_branch: ${{ vars.DEFAULT_BRANCH }}
+          bbl_state_branch: master
           gcp_zone: ${{ vars.GCP_ZONE }}
           gcp_region: ${{ vars.GCP_REGION }}
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
@@ -230,6 +233,8 @@ jobs:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           CFLINUXFS5_LB_CERT: ${{ secrets.CFLINUXFS5_LB_CERT }}
           CFLINUXFS5_LB_KEY: ${{ secrets.CFLINUXFS5_LB_KEY }}
+          GCP_DNS_ZONE_NAME: ${{ vars.GCP_DNS_ZONE_NAME }}
+          GCP_DOMAIN_NAME: ${{ vars.SYSTEM_DOMAIN}}
 
   trigger-release-workflow:
     name: Trigger Release Workflow
@@ -246,7 +251,7 @@ jobs:
       - name: Trigger Release Workflow
         uses: ./.github/actions/trigger-release-workflow
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
           version: ${{ needs.resolve-inputs.outputs.version }}
 
   test-summary:
