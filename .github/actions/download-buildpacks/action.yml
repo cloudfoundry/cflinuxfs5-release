@@ -1,0 +1,131 @@
+name: 'Download Buildpacks'
+description: 'Download latest buildpacks from S3 for a specific stack'
+
+inputs:
+  stack:
+    description: 'Stack name (e.g., cflinuxfs5)'
+    required: true
+  bucket_name:
+    description: 'S3 bucket name containing buildpacks'
+    required: true
+  output_dir:
+    description: 'Directory to download buildpacks to'
+    required: false
+    default: 'buildpacks'
+
+outputs:
+  go_buildpack:
+    description: 'Path to Go buildpack'
+    value: ${{ steps.download.outputs.go_buildpack }}
+  ruby_buildpack:
+    description: 'Path to Ruby buildpack'
+    value: ${{ steps.download.outputs.ruby_buildpack }}
+  nodejs_buildpack:
+    description: 'Path to Node.js buildpack'
+    value: ${{ steps.download.outputs.nodejs_buildpack }}
+  python_buildpack:
+    description: 'Path to Python buildpack'
+    value: ${{ steps.download.outputs.python_buildpack }}
+  staticfile_buildpack:
+    description: 'Path to Staticfile buildpack'
+    value: ${{ steps.download.outputs.staticfile_buildpack }}
+  nginx_buildpack:
+    description: 'Path to Nginx buildpack'
+    value: ${{ steps.download.outputs.nginx_buildpack }}
+  binary_buildpack:
+    description: 'Path to Binary buildpack'
+    value: ${{ steps.download.outputs.binary_buildpack }}
+  dotnet_core_buildpack:
+    description: 'Path to DotNet Core buildpack'
+    value: ${{ steps.download.outputs.dotnet_core_buildpack }}
+  java_buildpack:
+    description: 'Path to Java buildpack'
+    value: ${{ steps.download.outputs.java_buildpack }}
+  php_buildpack:
+    description: 'Path to PHP buildpack'
+    value: ${{ steps.download.outputs.php_buildpack }}
+  r_buildpack:
+    description: 'Path to R buildpack'
+    value: ${{ steps.download.outputs.r_buildpack }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Download latest buildpacks from S3
+      id: download
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        STACK="${{ inputs.stack }}"
+        BUCKET="${{ inputs.bucket_name }}"
+        OUTPUT_DIR="${{ inputs.output_dir }}"
+        
+        mkdir -p "$OUTPUT_DIR"
+        
+        # Buildpack naming convention: {name}-buildpack-{stack}-v{version}.zip
+        # Example: go-buildpack-cflinuxfs5-v1.11.00-beta.zip
+        
+        BUILDPACKS=(
+          "go"
+          "ruby"
+          "nodejs"
+          "python"
+          "staticfile"
+          "nginx"
+          "binary"
+          "dotnet-core"
+          "java"
+          "php"
+          "r"
+        )
+        
+        download_latest_buildpack() {
+          local name=$1
+          local output_var=$2
+          
+          echo "Finding latest ${name}-buildpack for ${STACK}..."
+          
+          # List all versions of this buildpack for this stack, sort by version (newest first)
+          # Pattern: {name}-buildpack-{stack}-v{version}.zip
+          local latest=$(aws s3 ls "s3://${BUCKET}/buildpacks/${name}-buildpack-${STACK}-" 2>/dev/null | \
+            awk '{print $4}' | \
+            sort -t'v' -k2 -V -r | \
+            head -1)
+          
+          if [ -z "$latest" ]; then
+            echo "WARNING: No ${name}-buildpack found for ${STACK}"
+            echo "${output_var}=" >> $GITHUB_OUTPUT
+            return 0
+          fi
+          
+          echo "Downloading: ${latest}"
+          aws s3 cp "s3://${BUCKET}/buildpacks/${latest}" "${OUTPUT_DIR}/${latest}"
+          
+          echo "${output_var}=${OUTPUT_DIR}/${latest}" >> $GITHUB_OUTPUT
+          echo "Downloaded: ${OUTPUT_DIR}/${latest}"
+        }
+        
+        # Download each buildpack
+        download_latest_buildpack "go" "go_buildpack"
+        download_latest_buildpack "ruby" "ruby_buildpack"
+        download_latest_buildpack "nodejs" "nodejs_buildpack"
+        download_latest_buildpack "python" "python_buildpack"
+        download_latest_buildpack "staticfile" "staticfile_buildpack"
+        download_latest_buildpack "nginx" "nginx_buildpack"
+        download_latest_buildpack "binary" "binary_buildpack"
+        download_latest_buildpack "dotnet-core" "dotnet_core_buildpack"
+        download_latest_buildpack "java" "java_buildpack"
+        download_latest_buildpack "php" "php_buildpack"
+        download_latest_buildpack "r" "r_buildpack"
+        
+        echo ""
+        echo "Downloaded buildpacks:"
+        ls -la "$OUTPUT_DIR"

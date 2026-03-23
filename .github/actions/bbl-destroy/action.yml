@@ -11,7 +11,7 @@ inputs:
   bbl_state_branch:
     description: 'Branch of the bbl state repo'
     required: false
-    default: 'main'
+    default: 'master'
   bbl_state_deploy_key:
     description: 'SSH deploy key for BBL state repo'
     required: true
@@ -48,7 +48,7 @@ runs:
       run: |
         set -euo pipefail
         
-        wget -O /tmp/bbl https://github.com/Ivo1116/bosh-bootloader/releases/download/test/bbl-linux
+        wget -O /tmp/bbl https://github.com/cloudfoundry/bosh-bootloader/releases/download/v9.0.39/bbl-v9.0.39_linux_amd64
         chmod +x /tmp/bbl
         sudo mv /tmp/bbl /usr/local/bin/bbl
 
@@ -59,6 +59,17 @@ runs:
         wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
         unzip /tmp/terraform.zip -d /tmp/
         sudo mv /tmp/terraform /usr/local/bin/terraform
+
+    - name: Manage GCP DNS (Remove)
+      uses: ./.github/actions/manage-gcp-dns
+      with:
+        action: remove
+        bbl_state_dir: bbl-state/${{ inputs.env_name }}
+        gcp_dns_service_account_key: ${{ env.GCP_SERVICE_ACCOUNT_KEY }}
+        gcp_dns_zone_name: ${{ env.GCP_DNS_ZONE_NAME }}
+        gcp_dns_record_set_name: ${{ env.GCP_DOMAIN_NAME }}
+        gcp_dns_record_ttl: '300'
+      continue-on-error: true
 
     - name: Destroy environment
       id: destroy
@@ -89,7 +100,7 @@ runs:
         export BBL_IAAS=gcp
         
         echo "Running bbl destroy..."
-        bbl destroy --no-confirm --terraform-binary /usr/local/bin/terraform
+        bbl destroy --no-confirm --terraform-binary /usr/local/bin/terraform --debug
         
         echo "Environment destroyed successfully"
         echo "success=true" >> "$GITHUB_OUTPUT"
@@ -101,21 +112,15 @@ runs:
         set -euo pipefail
         cd bbl-state
         
-        git config user.name "CF Buildpacks Eng Bot"
-        git config user.email "tanzu-buildpacks.pdl@broadcom.com"
-        
-        echo "*/gcp-key.json" >> .gitignore
-        echo "*/service-account-key.json" >> .gitignore
-        echo "*/*-key.json" >> .gitignore
-        echo "*/*.key" >> .gitignore
-        echo "*/*.pem" >> .gitignore
-        echo "*/private_key" >> .gitignore
-        echo "*/id_rsa*" >> .gitignore
+        git config user.name "app-runtime-interfaces@cloudfoundry.org"
+        git config user.email "app-runtime-interfaces@cloudfoundry.org"
 
         rm -rf "${{ inputs.env_name }}"
         
+        git add -A
+        git reset -- */gcp-key.json */service-account-key.json */*-key.json */*.key */*.pem */private_key */id_rsa*
+        
         if [[ -n "$(git status --porcelain)" ]]; then
-          git add -A
           git commit -m "Clean up BBL state for ${{ inputs.env_name }} after destroy"
           git push origin ${{ inputs.bbl_state_branch }}
           echo "BBL state changes committed and pushed"
