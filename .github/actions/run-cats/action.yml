@@ -222,11 +222,12 @@ runs:
         TEST_EXIT_CODE=$?
         
         if [ $TEST_EXIT_CODE -ne 0 ]; then
-          echo "CATs failed with exit code $TEST_EXIT_CODE, but continuing..."
+          echo "CATs failed with exit code $TEST_EXIT_CODE"
+          echo "success=false" >> "$GITHUB_OUTPUT"
+          exit $TEST_EXIT_CODE
         fi
-        
+
         echo "success=true" >> "$GITHUB_OUTPUT"
-        exit 0
 
     - name: Cleanup CATs buildpacks
       if: always()

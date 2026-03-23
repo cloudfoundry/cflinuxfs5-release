@@ -119,8 +119,8 @@ runs:
       run: |
         set -euo pipefail
         cd bbl-state
-        git config user.name "CF Buildpacks Eng Bot"
-        git config user.email "tanzu-buildpacks.pdl@broadcom.com"
+        git config user.name "app-runtime-interfaces@cloudfoundry.org"
+        git config user.email "app-runtime-interfaces@cloudfoundry.org"
         
         git add -A
         git reset -- */gcp-key.json */service-account-key.json */*-key.json */*.key */*.pem */private_key */id_rsa*

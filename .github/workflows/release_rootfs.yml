@@ -28,7 +28,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group:  cflinusfs
+  group: cflinuxfs
   cancel-in-progress: false
 
 defaults:
@@ -104,7 +104,7 @@ jobs:
           default_branch: main
           cflinuxfs_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
@@ -125,7 +125,7 @@ jobs:
           bucket_name: ${{ vars.BUCKET_NAME }}
           key: versions/stack-${{ vars.STACK }}
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
@@ -157,7 +157,7 @@ jobs:
           key: versions/stack-${{ vars.STACK }}
           version: ${{ steps.bump.outputs.next_rc }}
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
@@ -182,7 +182,7 @@ jobs:
           repo: ${{ vars.STACK }}
           include_receipt: 'true'
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
@@ -205,7 +205,7 @@ jobs:
           dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
@@ -225,16 +225,16 @@ jobs:
           version: ${{ needs.release-rootfs-repo.outputs.final_version }}
           release_repo: ${{ vars.STACK }}-release
           bucket_name: ${{ vars.BUCKET_NAME }}
-          default_branch: dev
+          default_branch: main
           git_user_name: app-runtime-interfaces@cloudfoundry.org
           git_user_email: app-runtime-interfaces@cloudfoundry.org
           github_token: ${{ secrets.CFLINUX_GITHUB_TOKEN }}
           go_version: ${{ vars.GOLANG_VERSION }}
-          aws_region: ${{ secrets.AWS_REGION }}
+          aws_region: ${{ vars.AWS_REGION }}
           owner: ${{ vars.REPO_OWNER }}
           release_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
@@ -247,7 +247,7 @@ jobs:
           bucket_name: ${{ vars.BUCKET_NAME }}
           artifact_types: 'stack, receipt, release'
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
