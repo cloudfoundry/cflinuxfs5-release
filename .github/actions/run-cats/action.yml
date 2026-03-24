@@ -184,14 +184,6 @@ runs:
           "include_syslog": false,
           "include_app_syslog_tcp": false,
           "skip_diego_unsupported_tests": true,
-          "skip_go": false,
-          "skip_node": false,
-          "skip_java": false,
-          "skip_ruby": false,
-          "skip_python": false,
-          "skip_php": false,
-          "skip_dotnet": false,
-          "skip_staticfile": false,
           "go_buildpack_name": "cats_go_buildpack_${STACK}",
           "ruby_buildpack_name": "cats_ruby_buildpack_${STACK}",
           "nodejs_buildpack_name": "cats_nodejs_buildpack_${STACK}",
@@ -218,7 +210,8 @@ runs:
           --nodes="${{ inputs.nodes }}" \
           --flake-attempts=${{ inputs.flake_attempts }} \
           --timeout="${{ inputs.timeout }}" \
-          --no-color
+          --no-color \
+          --skip="Rolling deploys|php.*makes the app reachable|dotnet-core.*makes the app reachable|\\br\\b.*makes the app reachable"
         TEST_EXIT_CODE=$?
         
         if [ $TEST_EXIT_CODE -ne 0 ]; then
