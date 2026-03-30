@@ -76,7 +76,7 @@ runs:
             fi
           fi
         elif [[ "${{ inputs.type }}" == "release" ]]; then
-          cp rootfs-artifacts/${{ inputs.stack }}-release-${{ inputs.version }}.tgz release-assets/
+          cp rootfs-artifacts/${{ inputs.stack }}-${{ inputs.version }}.tgz release-assets/
         fi
         
         echo "Release assets prepared:"
@@ -85,9 +85,9 @@ runs:
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        name: ${{ inputs.version }}
+        name: v${{ inputs.version }}
         repository: ${{ inputs.owner }}/${{ inputs.repo }}
-        tag_name: ${{ inputs.version }}
+        tag_name: v${{ inputs.version }}
         body_path: release-body/body
         files: release-assets/*
         token: ${{ inputs.github_token }}

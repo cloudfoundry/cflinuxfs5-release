@@ -195,7 +195,7 @@ runs:
         FINAL="${{ inputs.final }}"
         
         mkdir -p ../rootfs-artifacts
-        OUTPUT="../rootfs-artifacts/${STACK}-release-${VERSION}.tgz"
+        OUTPUT="../rootfs-artifacts/${STACK}-${VERSION}.tgz"
         
         if [[ "$FINAL" == "true" ]]; then
           echo "Creating FINAL release..."

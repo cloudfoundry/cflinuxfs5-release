@@ -102,7 +102,7 @@ runs:
         stack: ${{ inputs.stack }}
         version: ${{ inputs.version }}
         bucket_name: ${{ inputs.bucket_name }}
-        file: rootfs-artifacts/${{ inputs.stack }}-release-${{ inputs.version }}.tgz
+        file: rootfs-artifacts/${{ inputs.stack }}-${{ inputs.version }}.tgz
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
