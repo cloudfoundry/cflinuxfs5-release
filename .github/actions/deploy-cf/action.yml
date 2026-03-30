@@ -98,7 +98,7 @@ runs:
         VERSION="${{ inputs.version }}"
         BBL_STATE_DIR="bbl-state/${{ inputs.env_name }}"
         eval "$(bbl print-env --shell-type posix --state-dir $BBL_STATE_DIR)"
-        bosh upload-release rootfs-artifacts/${STACK}-release-${VERSION}.tgz
+        bosh upload-release rootfs-artifacts/${STACK}-${VERSION}.tgz
 
     - name: Deploy CF with the new rootfs
       id: deploy

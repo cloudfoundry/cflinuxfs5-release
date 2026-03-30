@@ -85,7 +85,7 @@ runs:
       with:
         repo_dir: rootfs
         receipt_path: receipt-archive/receipt.${{ inputs.stack }}.x86_64-${{ inputs.final_version }}
-        tag: ${{ inputs.final_version }}
+        tag: v${{ inputs.final_version }}
         stack: ${{ inputs.stack }}
         git_user_name: ${{ inputs.stack }}-bot
         git_user_email: ${{ inputs.stack }}-bot@test.com
