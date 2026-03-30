@@ -27,7 +27,7 @@ runs:
       run: |
         set -euo pipefail
         TMP="$(mktemp)"
-        echo "${{ inputs.version }}" > "$TMP"
+        printf '%s' "${{ inputs.version }}" > "$TMP"
         aws s3 cp "$TMP" "s3://${{ inputs.bucket_name }}/${{ inputs.key }}" \
           --no-progress --content-type text/plain
         rm -f "$TMP"
