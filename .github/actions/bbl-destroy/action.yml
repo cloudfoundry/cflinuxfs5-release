@@ -122,6 +122,7 @@ runs:
         
         if [[ -n "$(git status --porcelain)" ]]; then
           git commit -m "Clean up BBL state for ${{ inputs.env_name }} after destroy"
+          git pull --rebase origin ${{ inputs.bbl_state_branch }}
           git push origin ${{ inputs.bbl_state_branch }}
           echo "BBL state changes committed and pushed"
         else
