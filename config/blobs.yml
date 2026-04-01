@@ -1,3 +1,9 @@
+golang-1-linux/go.linux-amd64.tar.gz:
+  size: 19
+  sha: sha256:b16e15764b8bc06c5c3f9f19bc8b99fa48e7894aa5a6ccdad65da49bbf564793
 rootfs/cflinuxfs5-0.13.0-beta.tar.gz:
   size: 483060150
   sha: sha256:70d388ee0d28570ea9a4f22350242b43951614433384cbb1bd88a63c70ec256e
+rootfs/cflinuxfs5-0.14.0-beta.tar.gz:
+  size: 483089051
+  sha: sha256:3e13c1c83d4b788f3a554511ca6f2935cc5efe8c7328098ed772cbbcfda8f085
