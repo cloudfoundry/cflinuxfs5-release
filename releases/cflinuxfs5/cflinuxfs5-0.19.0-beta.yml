@@ -1,0 +1,38 @@
+name: cflinuxfs5
+version: 0.19.0-beta
+commit_hash: 8083ae0
+uncommitted_changes: true
+jobs:
+- name: cflinuxfs5-rootfs-setup
+  version: c0217375eb0a204c8e81244545b77647fbfa09a828c4198d4f7da0c592876734
+  fingerprint: c0217375eb0a204c8e81244545b77647fbfa09a828c4198d4f7da0c592876734
+  sha1: sha256:f7725b49d4e63044492705604ee20561e899e96930e330a73fcb7a593c5078f5
+  packages:
+  - cflinuxfs5
+  - rootfs-certsplitter-cflinuxfs5
+- name: cflinuxfs5-smoke-test
+  version: 8a8c1d814ec56fc8855e3f47aa500e92887be2b4e8b95d7e196bce8be4af9e34
+  fingerprint: 8a8c1d814ec56fc8855e3f47aa500e92887be2b4e8b95d7e196bce8be4af9e34
+  sha1: sha256:a54bef6645931c831e185645cff6d1bcf0a7e234f81d1f3d0b4a8909e2767ca0
+  packages: []
+packages:
+- name: cflinuxfs5
+  version: 10a23e0124df89c99c5d07560863e0079f6d7c1900efc7bd3c8bc9292ed30f9a
+  fingerprint: 10a23e0124df89c99c5d07560863e0079f6d7c1900efc7bd3c8bc9292ed30f9a
+  sha1: sha256:301130b3b9de3a98cb895260c074d330876be2fc16e667b4e4eaa0ade3ba54ed
+  dependencies: []
+- name: golang-1-linux
+  version: a9ec2c795feaf63781af31ef2f20627cde83daf214e6d0b15dbd1e965f39d67f
+  fingerprint: a9ec2c795feaf63781af31ef2f20627cde83daf214e6d0b15dbd1e965f39d67f
+  sha1: sha256:5aa81d027504119e689b7a0550b5d0e9eb37b8b9307d066f48de97f188667f4c
+  dependencies: []
+- name: rootfs-certsplitter-cflinuxfs5
+  version: 94a43ec220e1222e1bbb16859f5980acfb6c5da1a4c3c5511d5b579792e20983
+  fingerprint: 94a43ec220e1222e1bbb16859f5980acfb6c5da1a4c3c5511d5b579792e20983
+  sha1: sha256:d6161d4cf719feab874f16d5af3a229c68c915e659c2cc3fb3fd86501f64070d
+  dependencies:
+  - golang-1-linux
+license:
+  version: 02abac2937c1b0c30190d7d3766c6a57d540d84f5bbdbe47518880d7166e766e
+  fingerprint: 02abac2937c1b0c30190d7d3766c6a57d540d84f5bbdbe47518880d7166e766e
+  sha1: sha256:e0222fcef42c2dc0a05b4b02e12412b2c515892bc4e84a78455e89de697170c6
