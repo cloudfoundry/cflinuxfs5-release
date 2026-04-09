@@ -1,4 +1,6 @@
 builds:
+  065f322a-431c-4bea-4e6a-4c97a140bcb5:
+    version: 0.20.0-beta
   20195104-d105-4cf5-5be2-b1c0eac329ee:
     version: 0.18.0-beta
   46d9c479-639e-4690-52b3-8ec52a17e8e6:
