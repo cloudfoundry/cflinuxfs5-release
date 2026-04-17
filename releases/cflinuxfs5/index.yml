@@ -23,4 +23,6 @@ builds:
     version: 0.17.0-beta
   c2091560-f14b-471f-5685-1c6fa94bc5d8:
     version: 0.19.0-beta
+  e9372f18-a1ee-4510-7968-8cd2715959f0:
+    version: 0.25.0-beta
 format-version: "2"
