@@ -112,7 +112,6 @@ runs:
         
         deploy_cf() {
           bosh -n -d cf deploy cf-deployment/cf-deployment.yml \
-            -o cf-deployment/operations/experimental/use-noble-stemcell.yml \
             -o cf-deployment/operations/use-postgres.yml \
             -o ${OPS_FILE} \
             -v system_domain=${DOMAIN}
