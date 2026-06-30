@@ -34,10 +34,6 @@ inputs:
     description: 'Test timeout (e.g. 2h)'
     required: false
     default: '2h'
-  buildpacks_bucket:
-    description: 'S3 bucket containing buildpacks'
-    required: false
-    default: 'cflinuxfs5-release'
 
 outputs:
   success:
@@ -105,12 +101,11 @@ runs:
           -u admin \
           -p "${{ steps.creds.outputs.admin_password }}"
 
-    - name: Download buildpacks from S3
+    - name: Download official buildpacks from GitHub releases
       id: buildpacks
       uses: ./.github/actions/download-buildpacks
       with:
         stack: ${{ inputs.stack }}
-        bucket_name: ${{ inputs.buildpacks_bucket }}
         output_dir: buildpacks
 
     - name: Upload buildpacks to CF

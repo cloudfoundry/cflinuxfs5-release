@@ -1,17 +1,18 @@
 name: 'Download Buildpacks'
-description: 'Download latest buildpacks from S3 for a specific stack'
+description: 'Download the latest official Cloud Foundry buildpacks from cloudfoundry/<name>-buildpack GitHub releases'
 
 inputs:
   stack:
     description: 'Stack name (e.g., cflinuxfs5)'
     required: true
-  bucket_name:
-    description: 'S3 bucket name containing buildpacks'
-    required: true
   output_dir:
     description: 'Directory to download buildpacks to'
     required: false
     default: 'buildpacks'
+  github_token:
+    description: 'GitHub token used for the release downloads (defaults to the workflow token)'
+    required: false
+    default: ${{ github.token }}
 
 outputs:
   go_buildpack:
@@ -51,81 +52,76 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Download latest buildpacks from S3
+    - name: Download official buildpacks from GitHub releases
       id: download
       shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
       run: |
         set -euo pipefail
-        
+
         STACK="${{ inputs.stack }}"
-        BUCKET="${{ inputs.bucket_name }}"
         OUTPUT_DIR="${{ inputs.output_dir }}"
-        
+
         mkdir -p "$OUTPUT_DIR"
-        
-        # Buildpack naming convention: {name}-buildpack-{stack}-v{version}.zip
-        # Example: go-buildpack-cflinuxfs5-v1.11.00-beta.zip
-        
+
+        # Each entry is "<buildpack-name>:<output-key>".
+        # <buildpack-name> matches both the cloudfoundry/<name>-buildpack repo and
+        # the release-asset prefix (<name>-buildpack-<stack>-v<version>.zip).
         BUILDPACKS=(
-          "go"
-          "ruby"
-          "nodejs"
-          "python"
-          "staticfile"
-          "nginx"
-          "binary"
-          "dotnet-core"
-          "java"
-          "php"
-          "r"
+          "go:go_buildpack"
+          "ruby:ruby_buildpack"
+          "nodejs:nodejs_buildpack"
+          "python:python_buildpack"
+          "staticfile:staticfile_buildpack"
+          "nginx:nginx_buildpack"
+          "binary:binary_buildpack"
+          "dotnet-core:dotnet_core_buildpack"
+          "java:java_buildpack"
+          "php:php_buildpack"
+          "r:r_buildpack"
         )
-        
-        download_latest_buildpack() {
+
+        download_buildpack() {
           local name=$1
           local output_var=$2
-          
-          echo "Finding latest ${name}-buildpack for ${STACK}..."
-          
-          # List all versions of this buildpack for this stack, sort by version (newest first)
-          # Pattern: {name}-buildpack-{stack}-v{version}.zip
-          local latest=$(aws s3 ls "s3://${BUCKET}/buildpacks/${name}-buildpack-${STACK}-" 2>/dev/null | \
-            awk '{print $4}' | \
-            sort -t'v' -k2 -V -r | \
-            head -1)
-          
-          if [ -z "$latest" ]; then
-            echo "WARNING: No ${name}-buildpack found for ${STACK}"
-            echo "${output_var}=" >> $GITHUB_OUTPUT
-            return 0
+          local repo="cloudfoundry/${name}-buildpack"
+
+          echo "::group::${name}-buildpack (${repo})"
+
+          local tag
+          tag=$(gh release view --repo "${repo}" --json tagName --jq '.tagName')
+          echo "Latest tag: ${tag}"
+
+          local zip_name="${name}-buildpack-${STACK}-${tag}.zip"
+          local sum_name="${zip_name}.SHA256SUM.txt"
+
+          gh release download "${tag}" \
+            --repo "${repo}" \
+            --pattern "${zip_name}" \
+            --pattern "${sum_name}" \
+            --dir "${OUTPUT_DIR}" \
+            --clobber
+
+          if [[ ! -f "${OUTPUT_DIR}/${zip_name}" ]]; then
+            echo "ERROR: ${zip_name} not found in release ${tag} of ${repo}" >&2
+            echo "       (no official ${STACK} build for this buildpack version?)" >&2
+            exit 1
           fi
-          
-          echo "Downloading: ${latest}"
-          aws s3 cp "s3://${BUCKET}/buildpacks/${latest}" "${OUTPUT_DIR}/${latest}"
-          
-          echo "${output_var}=${OUTPUT_DIR}/${latest}" >> $GITHUB_OUTPUT
-          echo "Downloaded: ${OUTPUT_DIR}/${latest}"
+
+          # Verify checksum to make sure we got an intact, untampered asset.
+          (cd "${OUTPUT_DIR}" && sha256sum -c "${sum_name}")
+
+          echo "${output_var}=${OUTPUT_DIR}/${zip_name}" >> "$GITHUB_OUTPUT"
+          echo "Downloaded and verified: ${OUTPUT_DIR}/${zip_name}"
+          echo "::endgroup::"
         }
-        
-        # Download each buildpack
-        download_latest_buildpack "go" "go_buildpack"
-        download_latest_buildpack "ruby" "ruby_buildpack"
-        download_latest_buildpack "nodejs" "nodejs_buildpack"
-        download_latest_buildpack "python" "python_buildpack"
-        download_latest_buildpack "staticfile" "staticfile_buildpack"
-        download_latest_buildpack "nginx" "nginx_buildpack"
-        download_latest_buildpack "binary" "binary_buildpack"
-        download_latest_buildpack "dotnet-core" "dotnet_core_buildpack"
-        download_latest_buildpack "java" "java_buildpack"
-        download_latest_buildpack "php" "php_buildpack"
-        download_latest_buildpack "r" "r_buildpack"
-        
+
+        for entry in "${BUILDPACKS[@]}"; do
+          IFS=':' read -r name output_var <<< "${entry}"
+          download_buildpack "${name}" "${output_var}"
+        done
+
         echo ""
         echo "Downloaded buildpacks:"
-        ls -la "$OUTPUT_DIR"
+        ls -la "${OUTPUT_DIR}"
