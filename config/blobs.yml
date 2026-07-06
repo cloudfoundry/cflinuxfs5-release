@@ -67,3 +67,6 @@ rootfs/cflinuxfs5-0.33.0-beta.tar.gz:
 rootfs/cflinuxfs5-0.34.0-beta.tar.gz:
   size: 481018011
   sha: sha256:17465cec19bff4ffd1d10e783deba5e09f49d71506c32ac26010450f0d01ad11
+rootfs/cflinuxfs5-0.35.0-beta.tar.gz:
+  size: 481042958
+  sha: sha256:494e4d60bf61d5672bb99f27e2d2b58a981d8dee804925ed0b49321319bb7fd9
