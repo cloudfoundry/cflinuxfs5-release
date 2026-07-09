@@ -5,6 +5,8 @@ builds:
     version: 0.37.0-beta
   20195104-d105-4cf5-5be2-b1c0eac329ee:
     version: 0.18.0-beta
+  377e08aa-e819-42c5-732f-5c17fd4b9201:
+    version: 0.38.0-beta
   408d388e-0791-409f-5283-ec4883c354f3:
     version: 0.21.0-beta
   46d9c479-639e-4690-52b3-8ec52a17e8e6:
