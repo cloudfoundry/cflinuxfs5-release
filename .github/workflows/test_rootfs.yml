@@ -154,7 +154,7 @@ jobs:
           bbl_state_branch: master
           system_domain: ${{ vars.SYSTEM_DOMAIN }}
           env_name: ${{ vars.STACK }}
-          nodes: 4
+          nodes: 12
           flake_attempts: 3
           bbl_state_deploy_key: ${{ secrets.BBL_STATE_DEPLOY_KEY }}
         env:
