@@ -215,7 +215,7 @@ runs:
           --flake-attempts=${{ inputs.flake_attempts }} \
           --timeout="${{ inputs.timeout }}" \
           --no-color \
-          --skip="Rolling deploys|php.*makes the app reachable|dotnet-core.*makes the app reachable|\\br\\b.*makes the app reachable"
+          --skip="Specifying a specific Stack"
         TEST_EXIT_CODE=$?
         
         if [ $TEST_EXIT_CODE -ne 0 ]; then
