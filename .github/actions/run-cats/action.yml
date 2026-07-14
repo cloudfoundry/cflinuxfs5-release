@@ -89,8 +89,14 @@ runs:
 
         ADMIN_PASS=$(credhub get -n "/${DIRECTOR_NAME}/cf/cf_admin_password" -q)
 
+        # CredHub admin client secret is required by the CATS 'credhub' suite
+        # (matches the cflinuxfs4 write-cats-config task, which sets credhub_secret).
+        CREDHUB_CLIENT_SECRET=$(credhub get -n "/${DIRECTOR_NAME}/cf/credhub_admin_client_secret" -q)
+
         echo "::add-mask::$ADMIN_PASS"
+        echo "::add-mask::$CREDHUB_CLIENT_SECRET"
         echo "admin_password=$ADMIN_PASS" >> $GITHUB_OUTPUT
+        echo "credhub_client_secret=$CREDHUB_CLIENT_SECRET" >> $GITHUB_OUTPUT
 
     - name: Login to CF
       shell: bash
@@ -169,13 +175,16 @@ runs:
           "include_v3": true,
           "include_tasks": true,
           "include_security_groups": true,
-          "include_backend_compatibility": false,
+          "include_backend_compatibility": true,
+          "include_ssh": true,
+          "include_sso": true,
+          "include_internet_dependent": true,
+          "include_credhub": true,
+          "credhub_mode": "assisted",
+          "credhub_secret": "${{ steps.creds.outputs.credhub_client_secret }}",
           "include_docker": false,
-          "include_internet_dependent": false,
           "include_route_services": false,
           "include_services": false,
-          "include_ssh": false,
-          "include_sso": false,
           "include_syslog": false,
           "include_app_syslog_tcp": false,
           "skip_diego_unsupported_tests": true,
@@ -206,7 +215,7 @@ runs:
           --flake-attempts=${{ inputs.flake_attempts }} \
           --timeout="${{ inputs.timeout }}" \
           --no-color \
-          --skip="Rolling deploys|php.*makes the app reachable|dotnet-core.*makes the app reachable|\\br\\b.*makes the app reachable"
+          --skip="Specifying a specific Stack"
         TEST_EXIT_CODE=$?
         
         if [ $TEST_EXIT_CODE -ne 0 ]; then
