@@ -58,7 +58,10 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: cloudfoundry/cf-deployment
-        ref: main
+        # Pinned: cf-deployment@main integrated cflinuxfs5, and tracking main
+        # silently broke the deploy (duplicate release). Pin to a known-good tag
+        # that ships cflinuxfs5 so use-cflinuxfs5.yml can override it deterministically.
+        ref: v58.2.0
         path: cf-deployment
 
     - name: Setup tools (bosh, bbl)
