@@ -1,39 +1,20 @@
+# cf-deployment now ships cflinuxfs5 natively (release, cc stack,
+# cflinuxfs5-rootfs-setup job, preloaded rootfs, buildpack/cnb lifecycle
+# bundles). Adding those again here produces "Duplicate release name
+# 'cflinuxfs5'" (and would duplicate the job/stack/rootfs too).
+#
+# This ops-file therefore only does what cf-deployment does NOT:
+#   1. Point the cflinuxfs5 release at the locally-built dev release that the
+#      deploy step uploads via `bosh upload-release` (replacing the published
+#      beta URL/version), so CATS exercise the freshly-built rootfs.
+#   2. Make cflinuxfs5 the default stack (cf-deployment defaults to cflinuxfs4).
+
 - type: replace
-  path: /releases/-
+  path: /releases/name=cflinuxfs5
   value:
     name: cflinuxfs5
     version: latest
 
 - type: replace
-  path: /instance_groups/name=diego-cell/jobs/-
-  value:
-    name: cflinuxfs5-rootfs-setup
-    release: cflinuxfs5
-    properties:
-      cflinuxfs5-rootfs:
-        trusted_certs:
-          - ((diego_instance_identity_ca.ca))
-          - ((credhub_tls.ca))
-          - ((uaa_ssl.ca))
-
-- type: replace
-  path: /instance_groups/name=api/jobs/name=cloud_controller_ng/properties/cc/stacks/-
-  value:
-    name: cflinuxfs5
-    description: "Cloud Foundry Linux FS 5 (Ubuntu Noble)"
-
-- type: replace
-  path: /instance_groups/name=api/jobs/name=cloud_controller_ng/properties/cc/default_stack?
+  path: /instance_groups/name=api/jobs/name=cloud_controller_ng/properties/cc/default_stack
   value: cflinuxfs5
-
-- type: replace
-  path: /instance_groups/name=api/jobs/name=cloud_controller_ng/properties/cc/diego/lifecycle_bundles/buildpack~1cflinuxfs5?
-  value: buildpack_app_lifecycle/buildpack_app_lifecycle.tgz
-
-- type: replace
-  path: /instance_groups/name=api/jobs/name=cloud_controller_ng/properties/cc/diego/lifecycle_bundles/cnb~1cflinuxfs5?
-  value: cnb_app_lifecycle/cnb_app_lifecycle.tgz
-  
-- type: replace
-  path: /instance_groups/name=diego-cell/jobs/name=rep/properties/diego/rep/preloaded_rootfses/-
-  value: cflinuxfs5:/var/vcap/packages/cflinuxfs5/rootfs.tar
