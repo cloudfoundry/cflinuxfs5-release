@@ -35,6 +35,8 @@ builds:
     version: 0.33.0-beta
   8df0b3ec-fb47-4b68-63ea-cb8caafbc4ab:
     version: 0.22.0-beta
+  93e784ef-e11b-4cd0-6adc-9a5746756373:
+    version: 0.45.0
   97d1db99-4d2b-4612-6278-32e4c573df15:
     version: 0.23.0-beta
   a280fbcd-9e58-477d-5b83-db0425138c17:
