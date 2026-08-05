@@ -61,6 +61,7 @@ runs:
         type: ${{ inputs.type }}
         current_version: ${{ inputs.version }}
         previous_version: ${{ inputs.previous_version }}
+        bucket_name: ${{ inputs.bucket_name }}
 
     - name: Prepare release assets
       shell: bash
