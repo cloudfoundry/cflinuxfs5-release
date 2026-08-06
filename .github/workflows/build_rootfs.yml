@@ -137,7 +137,7 @@ jobs:
 
   build-and-process:
     name: Build and Process Rootfs
-    needs: [determine-build-needed, gather-resources]
+    needs: [check-new-cves, bump-golang-package, determine-build-needed, gather-resources]
     runs-on: ubuntu-latest
     if: needs.determine-build-needed.outputs.should_build == 'true'
     steps:
@@ -157,6 +157,9 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           cflinuxfs_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
           release_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
+          trigger_reason: ${{ needs.determine-build-needed.outputs.trigger_reason }}
+          cves_detected: ${{ needs.check-new-cves.outputs.cves_detected }}
+          golang_updated: ${{ needs.bump-golang-package.outputs.golang_updated }}
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -1,5 +1,5 @@
 name: 'Generate Release Notes'
-description: 'Generate release notes file release-body/body'
+description: 'Generate release notes (release-body/body) with a real package changelog derived from receipts'
 
 inputs:
   stack:
@@ -14,36 +14,92 @@ inputs:
     default: ''
   type:
     description: 'Type to generate notes for: stack (rootfs/source) or release (final tgz artifact)'
-    required: true 
+    required: true
     default: 'release'
+  bucket_name:
+    description: 'S3 bucket holding the receipts (required to render the package changelog)'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
   steps:
+    - name: Download current receipt
+      if: inputs.bucket_name != ''
+      uses: ./.github/actions/download-s3
+      with:
+        stack: ${{ inputs.stack }}
+        version: ${{ inputs.current_version }}
+        bucket_name: ${{ inputs.bucket_name }}
+        artifact_type: receipt
+      continue-on-error: true
+
+    - name: Download previous receipt
+      if: inputs.bucket_name != '' && inputs.previous_version != ''
+      uses: ./.github/actions/download-s3
+      with:
+        stack: ${{ inputs.stack }}
+        version: ${{ inputs.previous_version }}
+        bucket_name: ${{ inputs.bucket_name }}
+        artifact_type: receipt
+      continue-on-error: true
+
     - name: Generate release notes
       shell: bash
       run: |
         set -euo pipefail
-        
+
+        STACK="${{ inputs.stack }}"
+        VERSION="${{ inputs.current_version }}"
+        PREV_VERSION="${{ inputs.previous_version }}"
+
+        CURRENT_RECEIPT="receipt-artifacts/receipt.${STACK}.x86_64-${VERSION}"
+        PREVIOUS_RECEIPT="receipt-artifacts/receipt.${STACK}.x86_64-${PREV_VERSION}"
+
         mkdir -p release-body
         {
-          echo "# ${{ inputs.stack }} ${{ inputs.current_version }}"
-          if [[ -n "${{ inputs.previous_version }}" ]]; then
-            echo
-            echo "Diff from: ${{ inputs.previous_version }}"
-          fi
+          echo "# ${STACK} ${VERSION}"
           echo
-          echo "Changes:"
-          case "${{ inputs.type }}" in
-            "stack")
-              echo "- Updated rootfs packages and dependencies"
-              echo "- See commit history for detailed changes"
-              ;;
-            "release")
-              echo "- Rootfs finalized from RC"
-              echo "- See receipt for package updates"
-              ;;
-          esac
+          if [[ -n "$PREV_VERSION" ]]; then
+            echo "Diff from **${PREV_VERSION}**"
+            echo
+          fi
+
+          # Pull rootfs SHASUM / package count straight out of the receipt header.
+          if [[ -f "$CURRENT_RECEIPT" ]]; then
+            SHASUM="$(awk -F': *' '/^Rootfs SHASUM:/ {print $2; exit}' "$CURRENT_RECEIPT" || true)"
+            PKGS="$(awk -F': *' '/^Packages:/ {print $2; exit}' "$CURRENT_RECEIPT" || true)"
+            [[ -n "${SHASUM:-}" ]] && echo "Rootfs SHASUM: \`${SHASUM}\`"
+            [[ -n "${PKGS:-}" ]]   && echo "Packages: ${PKGS}"
+            echo
+          fi
+
+          # For the BOSH release artifact, include the manifest usage snippet.
+          if [[ "${{ inputs.type }}" == "release" ]]; then
+            echo "## Usage"
+            echo
+            echo '```yaml'
+            echo "releases:"
+            echo "- name: ${STACK}"
+            echo "  version: ${VERSION}"
+            echo '```'
+            echo
+          fi
+
+          if [[ -f "$CURRENT_RECEIPT" ]]; then
+            PREV_ARG=""
+            [[ -n "$PREV_VERSION" && -f "$PREVIOUS_RECEIPT" ]] && PREV_ARG="$PREVIOUS_RECEIPT"
+            bash "${GITHUB_ACTION_PATH}/../../scripts/receipt-delta.sh" "$PREV_ARG" "$CURRENT_RECEIPT"
+          else
+            # Fallback when no receipt is available (e.g. bucket_name not supplied).
+            echo "## Changes"
+            echo
+            case "${{ inputs.type }}" in
+              "stack")   echo "- Updated rootfs packages and dependencies (see attached receipt)";;
+              "release") echo "- Rootfs finalized from RC (see attached receipt for package versions)";;
+            esac
+          fi
         } > release-body/body
-        
-        echo "Release notes generated for ${{ inputs.stack }} (type: ${{ inputs.type }}) ${{ inputs.current_version }}"
+
+        echo "=== Release notes ==="
+        cat release-body/body

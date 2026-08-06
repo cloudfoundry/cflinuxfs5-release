@@ -8,6 +8,10 @@ inputs:
   version:
     description: 'Release version'
     required: true
+  previous_version:
+    description: 'Previous release version to diff against (optional)'
+    required: false
+    default: ''
   release_repo:
     description: 'BOSH release repository'
     required: true
@@ -122,6 +126,7 @@ runs:
         bucket_name: ${{ inputs.bucket_name }}
         type: release
         version: ${{ inputs.version }}
+        previous_version: ${{ inputs.previous_version }}
         owner: ${{ inputs.owner }}
         repo: ${{ inputs.release_repo }}
 

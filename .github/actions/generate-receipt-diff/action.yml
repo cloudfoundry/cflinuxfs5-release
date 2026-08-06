@@ -1,5 +1,5 @@
 name: 'Generate Receipt Diff'
-description: 'Generate receipt diff between current and previous versions'
+description: 'Generate receipt diff and a human-readable package changelog between current and previous versions'
 
 inputs:
   stack:
@@ -15,11 +15,26 @@ inputs:
   bucket_name:
     description: 'Name of the S3 bucket'
     required: true
+  trigger_reason:
+    description: 'Why this build ran (e.g. CVE update, golang bump, manual)'
+    required: false
+    default: ''
+  cves_detected:
+    description: 'Whether new CVEs triggered this build'
+    required: false
+    default: ''
+  golang_updated:
+    description: 'Whether a golang package bump triggered this build'
+    required: false
+    default: ''
 
 outputs:
   diff_path:
     description: 'Path to generated diff'
     value: ${{ steps.diff.outputs.diff_path }}
+  changelog_path:
+    description: 'Path to the rendered Markdown changelog'
+    value: ${{ steps.diff.outputs.changelog_path }}
 
 runs:
   using: 'composite'
@@ -29,7 +44,7 @@ runs:
       run: |
         set -euo pipefail
         mkdir -p public-robots-artifacts
-        mkdir -p receipt-artifacts 
+        mkdir -p receipt-artifacts
 
     - name: Download previous receipt
       if: inputs.previous_version != ''
@@ -45,12 +60,12 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        
+
         STACK="${{ inputs.stack }}"
         PREV_VERSION="${{ inputs.previous_version }}"
         PREVIOUS_RECEIPT_FILE="receipt-artifacts/receipt.${STACK}.x86_64-${PREV_VERSION}"
         PREVIOUS_RECEIPT="receipt.${STACK}.x86_64.previous"
-        
+
         if [[ -n "$PREV_VERSION" && -f "$PREVIOUS_RECEIPT_FILE" ]]; then
           echo "Found previous receipt for version: $PREV_VERSION"
           cp "$PREVIOUS_RECEIPT_FILE" "$PREVIOUS_RECEIPT"
@@ -59,36 +74,60 @@ runs:
           touch "$PREVIOUS_RECEIPT"
         fi
 
-    - name: Generate diff
+    - name: Generate diff and changelog
       id: diff
       shell: bash
       run: |
         set -euo pipefail
-        
+
         STACK="${{ inputs.stack }}"
         VERSION="${{ inputs.version }}"
-        
+
         CURRENT_RECEIPT="receipt-artifacts/receipt.${STACK}.x86_64-${VERSION}"
         PREVIOUS_RECEIPT="receipt.${STACK}.x86_64.previous"
-        
+
         if [[ ! -f "$CURRENT_RECEIPT" ]]; then
           echo "ERROR: Current receipt not found: $CURRENT_RECEIPT"
           exit 1
         fi
-        
+
         echo "=== Generating Receipt Diff ==="
         echo "Previous: $PREVIOUS_RECEIPT"
         echo "Current: $CURRENT_RECEIPT"
-        
+
         DIFF_FILE="public-robots-artifacts/receipt-diff-${VERSION}.txt"
         SUMMARY_FILE="public-robots-artifacts/receipt-summary-${VERSION}.txt"
-        
+        CHANGELOG_FILE="public-robots-artifacts/receipt-changelog-${VERSION}.md"
+
+        # Raw unified diff (kept for machine/manual inspection).
         if command -v git >/dev/null 2>&1; then
           git --no-pager diff --no-index "$PREVIOUS_RECEIPT" "$CURRENT_RECEIPT" > "$DIFF_FILE" || true
         else
           diff -u "$PREVIOUS_RECEIPT" "$CURRENT_RECEIPT" > "$DIFF_FILE" || true
         fi
-        
+
+        # Human-readable, categorized package changelog (added/removed/upgraded).
+        PREV_ARG=""
+        [[ -s "$PREVIOUS_RECEIPT" ]] && PREV_ARG="$PREVIOUS_RECEIPT"
+        {
+          echo "# ${STACK} ${VERSION}"
+          echo
+          if [[ -n "${{ inputs.previous_version }}" ]]; then
+            echo "Diff from **${{ inputs.previous_version }}**"
+            echo
+          fi
+          # Surface *why* this build ran, when known.
+          if [[ -n "${{ inputs.trigger_reason }}" || "${{ inputs.cves_detected }}" == "true" || "${{ inputs.golang_updated }}" == "true" ]]; then
+            echo "## Build trigger"
+            echo
+            [[ -n "${{ inputs.trigger_reason }}" ]] && echo "- Reason: ${{ inputs.trigger_reason }}"
+            [[ "${{ inputs.cves_detected }}" == "true" ]] && echo "- Includes new CVE fixes"
+            [[ "${{ inputs.golang_updated }}" == "true" ]] && echo "- Includes a golang package bump"
+            echo
+          fi
+          bash "${GITHUB_ACTION_PATH}/../../scripts/receipt-delta.sh" "$PREV_ARG" "$CURRENT_RECEIPT"
+        } > "$CHANGELOG_FILE"
+
         {
           echo "Receipt Diff Summary"
           echo "==================="
@@ -105,6 +144,10 @@ runs:
             echo "No changes detected (or no previous version available)."
           fi
         } > "$SUMMARY_FILE"
-        
-        echo "Diff generated successfully (empty previous treated as no prior version)"
+
+        echo "=== Package changelog ==="
+        cat "$CHANGELOG_FILE"
+
+        echo "Diff and changelog generated successfully (empty previous treated as no prior version)"
         echo "diff_path=public-robots-artifacts" >> $GITHUB_OUTPUT
+        echo "changelog_path=$CHANGELOG_FILE" >> $GITHUB_OUTPUT

@@ -223,6 +223,7 @@ jobs:
         with:
           stack: ${{ vars.STACK }}
           version: ${{ needs.release-rootfs-repo.outputs.final_version }}
+          previous_version: ${{ needs.resolve-inputs.outputs.previous_tag }}
           release_repo: ${{ vars.STACK }}-release
           bucket_name: ${{ vars.BUCKET_NAME }}
           default_branch: main
