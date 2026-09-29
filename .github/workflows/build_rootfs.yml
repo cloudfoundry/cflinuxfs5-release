@@ -40,7 +40,6 @@ jobs:
           ubuntu_version: ${{ vars.CVE_UBUNTU_VERSION }}
           ubuntu_codename: ${{ vars.CVE_UBUNTU_CODENAME }}
           buildpacks_ci_repo: ${{ vars.BUILDPACKS_CI_REPO }}
-          cves_repo_path: new-cves
           rootfs_repo: ${{ vars.ROOTFS_REPO }}
           cflinuxfs_deploy_key: ${{ secrets.CFLINUXFS5_DEPLOY_KEY }}
 
