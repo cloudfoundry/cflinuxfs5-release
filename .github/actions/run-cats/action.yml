@@ -47,12 +47,12 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: cloudfoundry/cf-acceptance-tests
-        # Pin to a fixed commit instead of floating `develop`. Floating CATs
-        # against a pinned cf-deployment caused a version skew: CATs started
-        # sending `hash_balance` in the hash-based routing specs while the
-        # deployed gorouter didn't yet support it, producing 404s. Bump this
-        # ref together with the cf-deployment pin in the deploy-cf action.
-        ref: fa299a6b096b8161ed213b093a6b1cffa6ef2fa4
+        # Track develop (latest tests) to pair with the latest cf-deployment
+        # release that deploy-cf resolves. Note: develop can briefly outrun the
+        # newest cf-deployment *release* (a test may land before the fix is cut
+        # into a release), so an occasional upstream-driven failure is expected;
+        # re-run, or temporarily skip the affected spec, when that happens.
+        ref: develop
         path: cf-acceptance-tests
 
     - name: Checkout bbl state repo
