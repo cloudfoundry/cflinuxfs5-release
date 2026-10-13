@@ -58,10 +58,17 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: cloudfoundry/cf-deployment
-        # Pinned: cf-deployment@main integrated cflinuxfs5, and tracking main
-        # silently broke the deploy (duplicate release). Pin to a known-good tag
-        # that ships cflinuxfs5 so use-cflinuxfs5.yml can override it deterministically.
-        ref: v58.2.0
+        # Pinned to a known-good tag that ships cflinuxfs5 natively so
+        # use-cflinuxfs5.yml can override it deterministically (tracking main
+        # previously broke the deploy with a duplicate release).
+        #
+        # v60.9.0 ships routing-release 0.396.0, which includes the fix for the
+        # hash-based load-balancing registration bug introduced in 0.386.0
+        # (shipped by the previous pin v58.2.0): gorouter dropped router.register
+        # messages for routes using `loadbalancing: hash` with a `hash_balance`
+        # factor, so the route 404'd and the CATs hash-routing specs failed.
+        # Keep this pin in step with the cf-acceptance-tests ref in run-cats.
+        ref: v60.9.0
         path: cf-deployment
 
     - name: Setup tools (bosh, bbl)
