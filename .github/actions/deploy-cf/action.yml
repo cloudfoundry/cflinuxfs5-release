@@ -54,14 +54,29 @@ runs:
         ssh-key: ${{ inputs.bbl_state_deploy_key }}
         path: bbl-state
 
+    - name: Resolve latest cf-deployment release
+      id: cfdep
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        # Track the latest cf-deployment release instead of a static pin.
+        # The old "Duplicate release name 'cflinuxfs5'" break was caused by the
+        # pre-01a3ca906 ops-file that *added* cflinuxfs5; use-cflinuxfs5.yml is
+        # now replace-only, so native cflinuxfs5 integration no longer collides.
+        # Use the latest tagged release (not main) to avoid transiently-broken
+        # intermediate commits. Any release >= v60.5 ships routing-release
+        # >= 0.394.0, which fixes the hash-based-routing registration bug.
+        TAG=$(gh release view --repo cloudfoundry/cf-deployment --json tagName --jq .tagName)
+        echo "Latest cf-deployment release: ${TAG}"
+        echo "ref=${TAG}" >> "$GITHUB_OUTPUT"
+
     - name: Checkout cf-deployment
       uses: actions/checkout@v4
       with:
         repository: cloudfoundry/cf-deployment
-        # Pinned: cf-deployment@main integrated cflinuxfs5, and tracking main
-        # silently broke the deploy (duplicate release). Pin to a known-good tag
-        # that ships cflinuxfs5 so use-cflinuxfs5.yml can override it deterministically.
-        ref: v58.2.0
+        ref: ${{ steps.cfdep.outputs.ref }}
         path: cf-deployment
 
     - name: Setup tools (bosh, bbl)

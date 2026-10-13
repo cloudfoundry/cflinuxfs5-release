@@ -47,6 +47,11 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: cloudfoundry/cf-acceptance-tests
+        # Track develop (latest tests) to pair with the latest cf-deployment
+        # release that deploy-cf resolves. Note: develop can briefly outrun the
+        # newest cf-deployment *release* (a test may land before the fix is cut
+        # into a release), so an occasional upstream-driven failure is expected;
+        # re-run, or temporarily skip the affected spec, when that happens.
         ref: develop
         path: cf-acceptance-tests
 
