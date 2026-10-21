@@ -91,4 +91,6 @@ builds:
     version: 0.34.0-beta
   f835c0a9-3250-462f-5fa4-6fdca846c41e:
     version: 0.26.0-beta
+  fce9d75b-4303-4eeb-7f67-b3bf61314ee1:
+    version: 0.59.0
 format-version: "2"
