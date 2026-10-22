@@ -72,18 +72,46 @@ runs:
           exit 0
         fi
         
+        # Compare two versions. Returns:
+        #   0 if $1 == $2
+        #   1 if $1 >  $2
+        #   2 if $1 <  $2
+        # Understands semver pre-release suffixes (e.g. 0.59.0-rc.3 < 0.59.0)
+        # and is safe under `set -u` even when the two versions have a
+        # different number of dot-separated components.
         version_compare() {
-          if [[ "$1" == "$2" ]]; then
+          local v1="$1" v2="$2"
+
+          if [[ "$v1" == "$v2" ]]; then
             return 0
           fi
+
+          # Split each version into its numeric base and an optional
+          # pre-release part separated by `-` (e.g. "0.59.0-rc.3").
+          local base1="${v1%%-*}" pre1=""
+          [[ "$v1" == *-* ]] && pre1="${v1#*-}"
+          local base2="${v2%%-*}" pre2=""
+          [[ "$v2" == *-* ]] && pre2="${v2#*-}"
+
+          # Compare the numeric base components one by one, treating
+          # missing trailing components as 0 (so 1.2 == 1.2.0).
           local IFS=.
-          local i ver1=($1) ver2=($2)
-          for ((i=${#ver1[@]}; i<${#ver2[@]}; i++)); do ver1[i]=0; done
-          for ((i=0; i<${#ver1[@]}; i++)); do
-            [[ -z ${ver2[i]} ]] && ver2[i]=0
-            if ((10#${ver1[i]} > 10#${ver2[i]})); then return 1; fi
-            if ((10#${ver1[i]} < 10#${ver2[i]})); then return 2; fi
+          local a=($base1) b=($base2)
+          local len=$(( ${#a[@]} > ${#b[@]} ? ${#a[@]} : ${#b[@]} ))
+          local i x y
+          for ((i=0; i<len; i++)); do
+            x="${a[i]:-0}"
+            y="${b[i]:-0}"
+            if ((10#$x > 10#$y)); then return 1; fi
+            if ((10#$x < 10#$y)); then return 2; fi
           done
+
+          # Numeric bases are equal: a pre-release is older than the
+          # corresponding final release (semver rule).
+          if [[ -z "$pre1" && -n "$pre2" ]]; then return 1; fi
+          if [[ -n "$pre1" && -z "$pre2" ]]; then return 2; fi
+          if [[ "$pre1" < "$pre2" ]]; then return 2; fi
+          if [[ "$pre1" > "$pre2" ]]; then return 1; fi
           return 0
         }
         
