@@ -3,7 +3,7 @@ description: 'Generate GitHub release notes for BOSH release'
 
 # NOTE: The GitHub release body for the BOSH release is authoritatively produced
 # by ./.github/actions/generate-release-notes (invoked via upload-to-github with
-# type=release), which now emits the usage snippet AND a package changelog.
+# type=release), which emits the security fixes and package changelog.
 # This action's output is overwritten by that step and is kept only for
 # backwards compatibility / standalone use.
 
@@ -28,13 +28,6 @@ runs:
           echo "# ${{ inputs.stack }} BOSH Release v${{ inputs.version }}"
           echo
           echo "Includes rootfs tarball and final BOSH release."
-          echo
-          echo "## Usage"
-          echo '```yaml'
-          echo "releases:"
-          echo "- name: ${{ inputs.stack }}"
-          echo "  version: ${{ inputs.version }}"
-          echo '```'
         } > release-body/body
 
         echo "BOSH release notes generated for v${{ inputs.version }}"

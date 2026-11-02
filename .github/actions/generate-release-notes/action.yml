@@ -20,10 +20,26 @@ inputs:
     description: 'S3 bucket holding the receipts (required to render the package changelog)'
     required: false
     default: ''
+  cves_ref:
+    description: 'Pinned public-buildpacks-ci-robots commit containing security notices'
+    required: false
+    default: ''
+  ubuntu_codename:
+    description: 'Ubuntu codename used by the CVE notifier'
+    required: false
+    default: 'ubuntu24.04'
 
 runs:
   using: 'composite'
   steps:
+    - name: Checkout security notice snapshot
+      if: inputs.cves_ref != ''
+      uses: actions/checkout@v4
+      with:
+        repository: cloudfoundry/public-buildpacks-ci-robots
+        ref: ${{ inputs.cves_ref }}
+        path: cve-snapshot
+
     - name: Download current receipt
       if: inputs.bucket_name != ''
       uses: ./.github/actions/download-s3
@@ -46,6 +62,9 @@ runs:
 
     - name: Generate release notes
       shell: bash
+      env:
+        CVES_REF: ${{ inputs.cves_ref }}
+        UBUNTU_CODENAME: ${{ inputs.ubuntu_codename }}
       run: |
         set -euo pipefail
 
@@ -74,16 +93,9 @@ runs:
             echo
           fi
 
-          # For the BOSH release artifact, include the manifest usage snippet.
-          if [[ "${{ inputs.type }}" == "release" ]]; then
-            echo "## Usage"
-            echo
-            echo '```yaml'
-            echo "releases:"
-            echo "- name: ${STACK}"
-            echo "  version: ${VERSION}"
-            echo '```'
-            echo
+          if [[ -n "$CVES_REF" ]]; then
+            ruby "${GITHUB_ACTION_PATH}/../../scripts/unreleased-usns.rb" render \
+              "cve-snapshot/new-cve-notifications/${UBUNTU_CODENAME}.yml" "$VERSION"
           fi
 
           if [[ -f "$CURRENT_RECEIPT" ]]; then
