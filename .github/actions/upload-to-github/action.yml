@@ -14,6 +14,14 @@ inputs:
   previous_version:
     description: 'Previous version for diff'
     required: false
+  cves_ref:
+    description: 'Pinned public-buildpacks-ci-robots commit containing security notices'
+    required: false
+    default: ''
+  ubuntu_codename:
+    description: 'Ubuntu codename used by the CVE notifier'
+    required: false
+    default: 'ubuntu24.04'
   bucket_name:
     description: 'S3 bucket name'
     required: true
@@ -62,6 +70,8 @@ runs:
         current_version: ${{ inputs.version }}
         previous_version: ${{ inputs.previous_version }}
         bucket_name: ${{ inputs.bucket_name }}
+        cves_ref: ${{ inputs.cves_ref }}
+        ubuntu_codename: ${{ inputs.ubuntu_codename }}
 
     - name: Prepare release assets
       shell: bash

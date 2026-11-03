@@ -12,6 +12,14 @@ inputs:
     description: 'Previous release version to diff against (optional)'
     required: false
     default: ''
+  cves_ref:
+    description: 'Pinned public-buildpacks-ci-robots commit containing security notices'
+    required: false
+    default: ''
+  ubuntu_codename:
+    description: 'Ubuntu codename used by the CVE notifier'
+    required: false
+    default: 'ubuntu24.04'
   release_repo:
     description: 'BOSH release repository'
     required: true
@@ -127,6 +135,8 @@ runs:
         type: release
         version: ${{ inputs.version }}
         previous_version: ${{ inputs.previous_version }}
+        cves_ref: ${{ inputs.cves_ref }}
+        ubuntu_codename: ${{ inputs.ubuntu_codename }}
         owner: ${{ inputs.owner }}
         repo: ${{ inputs.release_repo }}
 
