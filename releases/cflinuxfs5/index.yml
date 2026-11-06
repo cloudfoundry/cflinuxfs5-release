@@ -27,6 +27,8 @@ builds:
     version: 0.38.0-beta
   408d388e-0791-409f-5283-ec4883c354f3:
     version: 0.21.0-beta
+  4601cfba-f54a-44fc-70a0-d9b197ee0e20:
+    version: 0.69.0
   46d9c479-639e-4690-52b3-8ec52a17e8e6:
     version: 0.13.0-beta
   526c6c7e-a36c-4c73-5858-16bac9710adf:
